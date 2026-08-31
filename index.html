@@ -83,7 +83,7 @@
 
     /* VIEW 1: PEMESANAN */
     .menu-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-    .filter-container { display: flex; gap: 10px; margin-bottom: 15px; }
+    .filter-container { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
     .btn-filter {
       background: #ffe4e6;
       color: var(--primary);
@@ -155,7 +155,7 @@
     .display-main-box { text-align: center; padding: 40px 20px; background: #fff; border: 3px solid var(--primary); border-radius: 16px; }
     .display-big-num { font-size: 5.5rem; font-weight: 800; color: var(--primary); line-height: 1.1; margin: 15px 0; }
     .display-sub-info { display: flex; justify-content: space-around; margin-top: 30px; border-top: 2px solid #f3f4f6; padding-top: 20px; }
-    .display-sub-card text-align: center;
+    .display-sub-card { text-align: center; }
 
     @media (max-width: 768px) {
       .menu-layout, .kasir-grid, .stat-cards, .display-grid { grid-template-columns: 1fr; }
@@ -298,16 +298,29 @@
       </div>
 
       <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
           <h3>Riwayat Transaksi Lengkap</h3>
           <button class="btn btn-success" onclick="downloadCSV()">📥 Download Laporan (CSV)</button>
+        </div>
+
+        <!-- FILTER WAKTU LAPORAN -->
+        <div class="filter-container" style="margin-bottom: 15px; align-items: center;">
+          <button class="btn-filter btn-report-filter active" onclick="setReportFilter('semua')">Semua Transaksi</button>
+          <button class="btn-filter btn-report-filter" onclick="setReportFilter('hari_ini')">Hari Ini</button>
+          <button class="btn-filter btn-report-filter" onclick="setReportFilter('mingguan')">7 Hari Terakhir</button>
+          <button class="btn-filter btn-report-filter" onclick="setReportFilter('bulanan')">Bulan Ini</button>
+          
+          <div style="display: flex; align-items: center; gap: 5px; margin-left: auto;">
+            <label style="font-size: 0.85rem; font-weight: 600; color: #4b5563;">Pilih Tanggal:</label>
+            <input type="date" id="report-date-picker" onchange="filterBySpecificDate()" style="padding: 5px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;">
+          </div>
         </div>
         
         <div style="overflow-x: auto;">
           <table>
             <thead>
               <tr>
-                <th>Waktu</th>
+                <th>Tanggal & Waktu</th>
                 <th>No. Antrian</th>
                 <th>Nama Pemesan</th>
                 <th>Rincian Pesanan</th>
@@ -386,6 +399,8 @@
     let menuList = [];
     let activeQueueFirebaseKey = null;
     let activeFilter = 'semua';
+    let currentReportFilter = 'semua';
+    let selectedSpecificDate = null;
 
     // Menu default awal jika Firebase masih kosong
     const defaultMenus = [
@@ -411,7 +426,6 @@
           menuList.push({ firebaseKey: key, ...data[key] });
         });
       } else {
-        // Jika database menu di Firebase belum ada, seed data awal
         defaultMenus.forEach(item => push(menusRef, item));
       }
 
@@ -455,10 +469,10 @@
 
     window.editMenuPrompt = function(key, namaLama, hargaLama) {
       const namaBaru = prompt("Edit Nama Menu:", namaLama);
-      if (namaBaru === null) return; // Batal
+      if (namaBaru === null) return;
 
       const hargaBaruInput = prompt("Edit Harga Menu (Rp):", hargaLama);
-      if (hargaBaruInput === null) return; // Batal
+      if (hargaBaruInput === null) return;
 
       const hargaBaru = parseInt(hargaBaruInput);
       if (!namaBaru.trim() || isNaN(hargaBaru)) {
@@ -521,7 +535,7 @@
 
     window.filterMenu = function(kategori) {
       activeFilter = kategori;
-      document.querySelectorAll('.btn-filter').forEach(btn => {
+      document.querySelectorAll('#view-pemesanan .btn-filter').forEach(btn => {
         btn.classList.toggle('active', btn.innerText.toLowerCase() === kategori.toLowerCase() || (kategori === 'semua' && btn.innerText === 'Semua'));
       });
       renderMenu();
@@ -590,12 +604,15 @@
       const rincian = cart.map(i => `${i.nama} (${i.qty}x)`).join(', ');
       
       const now = new Date();
-      const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+      const timeStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) + 
+                      ', ' + 
+                      now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
       const newOrderRef = push(ordersRef);
       set(newOrderRef, {
         noSeq: nextNumber,
         waktu: timeStr,
+        timestamp: now.getTime(), // Disimpan untuk kemudahan pencarian filter waktu
         noAntrian: antrianKode,
         nama: nama,
         rincian: rincian,
@@ -658,24 +675,102 @@
       });
     };
 
-    // --- ADMIN VIEW (REKAP LAPORAN) ---
+    // --- ADMIN VIEW (FILTER LAPORAN & REKAP) ---
+    window.setReportFilter = function(filterType) {
+      currentReportFilter = filterType;
+      selectedSpecificDate = null;
+      document.getElementById("report-date-picker").value = "";
+
+      const buttons = document.querySelectorAll('.btn-report-filter');
+      buttons.forEach(btn => btn.classList.remove('active'));
+      
+      if (filterType === 'semua') buttons[0].classList.add('active');
+      else if (filterType === 'hari_ini') buttons[1].classList.add('active');
+      else if (filterType === 'mingguan') buttons[2].classList.add('active');
+      else if (filterType === 'bulanan') buttons[3].classList.add('active');
+
+      renderAdminView();
+    };
+
+    window.filterBySpecificDate = function() {
+      const dateVal = document.getElementById("report-date-picker").value;
+      if (!dateVal) return;
+
+      selectedSpecificDate = dateVal; // YYYY-MM-DD
+      currentReportFilter = 'spesifik';
+
+      document.querySelectorAll('.btn-report-filter').forEach(btn => btn.classList.remove('active'));
+      renderAdminView();
+    };
+
+    function parseOrderDate(order) {
+      if (order.timestamp) {
+        return new Date(order.timestamp);
+      }
+      // Fallback parsing jika timestamp lama belum tersimpan: "31/08/2026, 11.20"
+      if (order.waktu) {
+        const parts = order.waktu.split(',');
+        if (parts[0]) {
+          const dateParts = parts[0].trim().split('/');
+          if (dateParts.length === 3) {
+            return new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+          }
+        }
+      }
+      return new Date();
+    }
+
+    function getFilteredHistory() {
+      const now = new Date();
+
+      return orderHistory.filter(order => {
+        const orderDate = parseOrderDate(order);
+
+        if (currentReportFilter === 'spesifik' && selectedSpecificDate) {
+          const year = orderDate.getFullYear();
+          const month = String(orderDate.getMonth() + 1).padStart(2, '0');
+          const day = String(orderDate.getDate()).padStart(2, '0');
+          const formattedOrderDate = `${year}-${month}-${day}`;
+          return formattedOrderDate === selectedSpecificDate;
+        }
+
+        if (currentReportFilter === 'hari_ini') {
+          return orderDate.toDateString() === now.toDateString();
+        }
+
+        if (currentReportFilter === 'mingguan') {
+          const sevenDaysAgo = new Date();
+          sevenDaysAgo.setDate(now.getDate() - 7);
+          sevenDaysAgo.setHours(0, 0, 0, 0);
+          return orderDate >= sevenDaysAgo;
+        }
+
+        if (currentReportFilter === 'bulanan') {
+          return orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
+        }
+
+        return true; // 'semua'
+      });
+    }
+
     function renderAdminView() {
       const tbody = document.getElementById("admin-table-body");
+      const filteredData = getFilteredHistory();
       
-      document.getElementById("stat-total-order").innerText = orderHistory.length;
+      document.getElementById("stat-total-order").innerText = filteredData.length;
       
-      const completed = orderHistory.filter(i => i.status === "Lunas");
+      const completed = filteredData.filter(i => i.status === "Lunas");
       document.getElementById("stat-completed-order").innerText = completed.length;
 
       const totalRevenue = completed.reduce((sum, i) => sum + i.total, 0);
       document.getElementById("stat-total-revenue").innerText = `Rp ${totalRevenue.toLocaleString('id-ID')}`;
 
-      if (orderHistory.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #9ca3af;">Belum ada data transaksi.</td></tr>`;
+      if (filteredData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #9ca3af;">Tidak ada data transaksi pada periode/tanggal ini.</td></tr>`;
         return;
       }
 
-      tbody.innerHTML = orderHistory.map(item => `
+      tbody.innerHTML = filteredData.map(item => `
         <tr>
           <td>${item.waktu}</td>
           <td><strong>${item.noAntrian}</strong></td>
@@ -692,15 +787,17 @@
     }
 
     window.downloadCSV = function() {
-      if (orderHistory.length === 0) {
-        alert("Belum ada data laporan antrian untuk di-download.");
+      const filteredData = getFilteredHistory();
+
+      if (filteredData.length === 0) {
+        alert("Belum ada data laporan pada periode ini untuk di-download.");
         return;
       }
 
       let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Waktu,No Antrian,Nama Pemesan,Rincian Pesanan,Total (Rp),Status Pembayaran\n";
+      csvContent += "Tanggal & Waktu,No Antrian,Nama Pemesan,Rincian Pesanan,Total (Rp),Status Pembayaran\n";
 
-      orderHistory.forEach(order => {
+      filteredData.forEach(order => {
         let rincianClean = `"${order.rincian.replace(/"/g, '""')}"`;
         let row = `${order.waktu},${order.noAntrian},${order.nama},${rincianClean},${order.total},${order.status}`;
         csvContent += row + "\n";
@@ -711,7 +808,7 @@
       link.setAttribute("href", encodedUri);
       
       const today = new Date().toISOString().split('T')[0];
-      link.setAttribute("download", `Laporan_PanggonNjajan_${today}.csv`);
+      link.setAttribute("download", `Laporan_PanggonNjajan_${currentReportFilter}_${today}.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
