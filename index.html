@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panggon Njajan - Firebase Realtime System</title>
+  <style>
+    :root {
+      --primary: #e11d48;
+      --primary-hover: #be123c;
+      --bg: #fff1f2;
+      --card-bg: #ffffff;
+      --text: #1f2937;
+      --accent: #d97706;
+      --accent-hover: #b45309;
+      --success: #059669;
+      --success-hover: #047857;
+      --info: #0284c7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding-bottom: 40px; }
+
+    /* Navigasi */
+    nav {
+      background: var(--primary);
+      color: white;
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    nav h1 { font-size: 1.4rem; }
+    .role-switcher { display: flex; gap: 8px; flex-wrap: wrap; }
+    .role-btn {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+    .role-btn.active { background: white; color: var(--primary); border-color: white; }
+
+    .main-content { max-width: 1100px; margin: 20px auto; padding: 0 15px; }
+
+    /* Cards & Buttons */
+    .card { 
+      background: var(--card-bg); 
+      padding: 20px; 
+      border-radius: 12px; 
+      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
+      border: 1px solid #ffe4e6; 
+      margin-bottom: 20px;
+    }
+
+    .btn { 
+      background: var(--primary); 
+      color: white; 
+      border: none; 
+      padding: 10px 16px; 
+      border-radius: 8px; 
+      cursor: pointer; 
+      font-weight: 600; 
+      transition: background 0.2s;
+    }
+    .btn:hover { background: var(--primary-hover); }
+    .btn-accent { background: var(--accent); }
+    .btn-accent:hover { background: var(--accent-hover); }
+    .btn-success { background: var(--success); }
+    .btn-success:hover { background: var(--success-hover); }
+    .btn-sm { padding: 4px 10px; font-size: 0.8rem; border-radius: 6px; }
+
+    .view-container { display: none; }
+    .view-container.active { display: block; }
+
+    /* VIEW 1: PEMESANAN */
+    .menu-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .filter-container { display: flex; gap: 10px; margin-bottom: 15px; }
+    .btn-filter {
+      background: #ffe4e6;
+      color: var(--primary);
+      border: none;
+      padding: 6px 14px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    .btn-filter.active { background: var(--primary); color: white; }
+
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
+    .menu-item-card {
+      background: white;
+      padding: 15px;
+      border-radius: 10px;
+      border: 1px solid #ffe4e6;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .menu-item-card h4 { font-size: 1rem; margin-bottom: 6px; }
+    .menu-item-card .price { color: var(--primary); font-weight: bold; margin-bottom: 10px; }
+
+    .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14px; border-bottom: 1px dashed #e5e7eb; padding-bottom: 8px; }
+    .qty-btn { background: #e5e7eb; border: none; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+    .total { border-top: 2px solid #f3f4f6; padding-top: 12px; margin-top: 12px; font-weight: bold; font-size: 1.1rem; display: flex; justify-content: space-between; }
+
+    /* VIEW 2: KASIR */
+    .kasir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .call-box { text-align: center; padding: 30px; }
+    .queue-big-num { font-size: 4rem; font-weight: bold; color: var(--primary); margin: 10px 0; }
+    .queue-name { font-size: 1.4rem; font-weight: 600; color: #4b5563; margin-bottom: 20px; }
+    
+    .queue-list { max-height: 400px; overflow-y: auto; }
+    .queue-card-item {
+      padding: 12px 15px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fafafa;
+    }
+    .queue-card-item.dipanggil { background: #fef3c7; border-color: #f59e0b; }
+    .queue-card-item.selesai { background: #d1fae5; border-color: #10b981; }
+
+    /* VIEW 3: ADMIN & TABLES */
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
+    th, td { border: 1px solid #e5e7eb; padding: 10px; text-align: left; }
+    th { background-color: #ffe4e6; color: var(--primary); }
+    tr:nth-child(even) { background-color: #f9fafb; }
+    
+    .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
+    .badge-pending { background: #fef3c7; color: #92400e; }
+    .badge-called { background: #dbeafe; color: #1e40af; }
+    .badge-paid { background: #d1fae5; color: #065f46; }
+
+    .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
+    .stat-card { background: white; padding: 15px; border-radius: 10px; border: 1px solid #ffe4e6; text-align: center; }
+    .stat-card h3 { color: var(--primary); font-size: 1.6rem; margin-top: 5px; }
+
+    .form-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
+    .form-control { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; flex: 1; min-width: 150px; }
+
+    /* VIEW 4: DISPLAY */
+    .display-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    .display-main-box { text-align: center; padding: 40px 20px; background: #fff; border: 3px solid var(--primary); border-radius: 16px; }
+    .display-big-num { font-size: 5.5rem; font-weight: 800; color: var(--primary); line-height: 1.1; margin: 15px 0; }
+    .display-sub-info { display: flex; justify-content: space-around; margin-top: 30px; border-top: 2px solid #f3f4f6; padding-top: 20px; }
+    .display-sub-card text-align: center;
+
+    @media (max-width: 768px) {
+      .menu-layout, .kasir-grid, .stat-cards, .display-grid { grid-template-columns: 1fr; }
+      nav { flex-direction: column; gap: 10px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navbar Switcher -->
+  <nav>
+    <h1>Panggon Njajan System</h1>
+    <div class="role-switcher">
+      <button class="role-btn active" onclick="switchRole('pemesanan')">📱 Antrian (Pelanggan)</button>
+      <button class="role-btn" onclick="switchRole('kasir')">📢 Kasir</button>
+      <button class="role-btn" onclick="switchRole('admin')">📊 Admin (Kelola Menu & Laporan)</button>
+      <button class="role-btn" onclick="switchRole('display')">📺 Display Antrian</button>
+    </div>
+  </nav>
+
+  <div class="main-content">
+
+    <!-- VIEW 1: PEMESANAN (PELANGGAN) -->
+    <div id="view-pemesanan" class="view-container active">
+      <div style="margin-bottom: 15px;">
+        <h2>Self-Service Order - Panggon Njajan</h2>
+        <p style="color: #6b7280;">Pilih menu kesukaanmu dan masukkan nama pemesan.</p>
+      </div>
+
+      <div class="menu-layout">
+        <div>
+          <div class="filter-container">
+            <button class="btn-filter active" onclick="filterMenu('semua')">Semua</button>
+            <button class="btn-filter" onclick="filterMenu('Minuman')">Minuman</button>
+            <button class="btn-filter" onclick="filterMenu('Makanan')">Makanan</button>
+          </div>
+          <div class="menu-grid" id="menu-container"></div>
+        </div>
+
+        <div class="card">
+          <h3>Detail Pesanan</h3>
+          <br>
+          <div style="margin-bottom: 15px;">
+            <label style="font-size: 0.9rem; font-weight: 600;">Nama Pemesan *</label>
+            <input type="text" id="customer-name" style="width:100%; padding: 8px; margin-top:5px; border-radius:6px; border:1px solid #cbd5e1;" placeholder="Nama Anda...">
+          </div>
+
+          <div id="cart-items">Belum ada menu yang dipilih.</div>
+          
+          <div class="total">
+            <span>Total:</span>
+            <span id="cart-total">Rp 0</span>
+          </div>
+          <br>
+          <button class="btn" style="width: 100%; font-size: 1rem;" onclick="buatPesanan()">Ambil Nomor Antrian</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: KASIR -->
+    <div id="view-kasir" class="view-container">
+      <div style="margin-bottom: 15px;">
+        <h2>Kasir & Pemanggilan Antrian</h2>
+        <p style="color: #6b7280;">Kelola panggilan antrian dan pembayaran pesanan pelanggan secara realtime.</p>
+      </div>
+
+      <div class="kasir-grid">
+        <div class="card call-box">
+          <h3>Antrian Dipanggil</h3>
+          <div class="queue-big-num" id="kasir-current-num">--</div>
+          <div class="queue-name" id="kasir-current-name">Atas Nama: -</div>
+          <div style="display: flex; gap: 10px; justify-content: center;">
+            <button class="btn btn-accent" style="font-size: 1rem;" onclick="panggilBerikutnya()">📢 Panggil Selanjutnya</button>
+            <button class="btn btn-success" style="font-size: 1rem;" onclick="prosesPembayaran()">💵 Konfirmasi Lunas</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Daftar Antrian Aktif</h3>
+          <br>
+          <div class="queue-list" id="kasir-queue-list">
+            <p style="color: #9ca3af; text-align: center;">Mengambil data dari Firebase...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 3: ADMIN (MANAJEMEN MENU & LAPORAN) -->
+    <div id="view-admin" class="view-container">
+      <div style="margin-bottom: 15px;">
+        <h2>Dashboard Admin</h2>
+        <p style="color: #6b7280;">Kelola menu resto dan pantau data transaksi realtime.</p>
+      </div>
+
+      <!-- KELOLA MENU RESTO -->
+      <div class="card">
+        <h3>🍔 Kelola Menu Resto (Tambah & Edit)</h3>
+        <br>
+        <div class="form-group">
+          <input type="text" id="admin-menu-nama" class="form-control" placeholder="Nama Menu (misal: Es Teh)">
+          <input type="number" id="admin-menu-harga" class="form-control" placeholder="Harga (misal: 5000)">
+          <select id="admin-menu-kategori" class="form-control">
+            <option value="Minuman">Minuman</option>
+            <option value="Makanan">Makanan</option>
+          </select>
+          <button class="btn btn-success" onclick="tambahMenu()">+ Tambah Menu Baru</button>
+        </div>
+
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Nama Menu</th>
+                <th>Kategori</th>
+                <th>Harga (Rp)</th>
+                <th style="width: 160px;">Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="admin-menu-table-body">
+              <tr><td colspan="4" style="text-align: center; color: #9ca3af;">Memuat daftar menu...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- DASHBOARD REKAP -->
+      <div class="stat-cards">
+        <div class="stat-card">
+          <span>Total Pesanan</span>
+          <h3 id="stat-total-order">0</h3>
+        </div>
+        <div class="stat-card">
+          <span>Total Antrian Selesai</span>
+          <h3 id="stat-completed-order" style="color: var(--success);">0</h3>
+        </div>
+        <div class="stat-card">
+          <span>Total Omset (Lunas)</span>
+          <h3 id="stat-total-revenue" style="color: var(--accent);">Rp 0</h3>
+        </div>
+      </div>
+
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3>Riwayat Transaksi Lengkap</h3>
+          <button class="btn btn-success" onclick="downloadCSV()">📥 Download Laporan (CSV)</button>
+        </div>
+        
+        <div style="overflow-x: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>No. Antrian</th>
+                <th>Nama Pemesan</th>
+                <th>Rincian Pesanan</th>
+                <th>Total (Rp)</th>
+                <th>Status Pembayaran</th>
+              </tr>
+            </thead>
+            <tbody id="admin-table-body">
+              <tr><td colspan="6" style="text-align: center; color: #9ca3af;">Mengambil data dari Firebase...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 4: DISPLAY ANTRIAN -->
+    <div id="view-display" class="view-container">
+      <div style="margin-bottom: 15px;">
+        <h2>Display Antrian Pelanggan</h2>
+        <p style="color: #6b7280;">Layar monitor informasi antrian untuk ruang tunggu.</p>
+      </div>
+
+      <div class="display-grid">
+        <div class="display-main-box card">
+          <h3 style="color: #6b7280; font-size: 1.2rem;">NOMOR ANTRIAN DIPANGGIL</h3>
+          <div class="display-big-num" id="display-current-num">--</div>
+          <div style="font-size: 1.8rem; font-weight: bold; color: #374151;" id="display-current-name">Menunggu Panggilan...</div>
+          
+          <div class="display-sub-info">
+            <div class="display-sub-card">
+              <span style="color: #6b7280; font-size: 0.9rem;">Total Antrian Masuk</span>
+              <h4 id="display-total-assigned">PJ-000</h4>
+            </div>
+            <div class="display-sub-card">
+              <span style="color: #6b7280; font-size: 0.9rem;">Sisa Antrian Menunggu</span>
+              <h4 id="display-waiting-count" style="color: var(--primary);">0 Orang</h4>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3>Daftar Panggilan</h3>
+          <br>
+          <div class="queue-list" id="display-queue-list">
+            <p style="color: #9ca3af; text-align: center;">Mengambil data dari Firebase...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- FIREBASE REALTIME SDK -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getDatabase, ref, push, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBK4mjgB7lr3ojX1fNNK80YMTHkc97a_a0",
+      authDomain: "panggon-njajan.firebaseapp.com",
+      databaseURL: "https://panggon-njajan-default-rtdb.asia-southeast1.firebasedatabase.app",
+      projectId: "panggon-njajan",
+      storageBucket: "panggon-njajan.firebasestorage.app",
+      messagingSenderId: "1072511804027",
+      appId: "1:1072511804027:web:9d2ec206cab8341214f8de",
+      measurementId: "G-DCKJ3TKB5Y"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+    const ordersRef = ref(db, 'orders');
+    const menusRef = ref(db, 'menus');
+
+    let cart = [];
+    let orderHistory = []; 
+    let menuList = [];
+    let activeQueueFirebaseKey = null;
+    let activeFilter = 'semua';
+
+    // Menu default awal jika Firebase masih kosong
+    const defaultMenus = [
+      { nama: "Es Teller", harga: 10000, kategori: "Minuman" },
+      { nama: "Alpukat Kocok", harga: 10000, kategori: "Minuman" },
+      { nama: "Mangga Kocok", harga: 10000, kategori: "Minuman" },
+      { nama: "Stroberry Kocok", harga: 10000, kategori: "Minuman" },
+      { nama: "Durian Kocok", harga: 15000, kategori: "Minuman" },
+      { nama: "Es Teller Durian", harga: 15000, kategori: "Minuman" },
+      { nama: "Mie Standar", harga: 8000, kategori: "Makanan" },
+      { nama: "Mie Jumbo", harga: 10000, kategori: "Makanan" },
+      { nama: "Dimsum Chilli Oil", harga: 10000, kategori: "Makanan" },
+      { nama: "Siomay Chilli Oil", harga: 10000, kategori: "Makanan" }
+    ];
+
+    // LISTEN DATA MENU FIREBASE REALTIME
+    onValue(menusRef, (snapshot) => {
+      const data = snapshot.val();
+      menuList = [];
+      
+      if (data) {
+        Object.keys(data).forEach(key => {
+          menuList.push({ firebaseKey: key, ...data[key] });
+        });
+      } else {
+        // Jika database menu di Firebase belum ada, seed data awal
+        defaultMenus.forEach(item => push(menusRef, item));
+      }
+
+      renderMenu();
+      renderAdminMenuTable();
+    });
+
+    // LISTEN DATA TRANSAKSI FIREBASE REALTIME
+    onValue(ordersRef, (snapshot) => {
+      const data = snapshot.val();
+      orderHistory = [];
+      
+      if (data) {
+        Object.keys(data).forEach(key => {
+          orderHistory.push({ firebaseKey: key, ...data[key] });
+        });
+      }
+
+      renderKasirView();
+      renderAdminView();
+      renderDisplayView();
+    });
+
+    // --- MANAJEMEN MENU RESTO (ADMIN) ---
+    window.tambahMenu = function() {
+      const nama = document.getElementById("admin-menu-nama").value.trim();
+      const harga = parseInt(document.getElementById("admin-menu-harga").value);
+      const kategori = document.getElementById("admin-menu-kategori").value;
+
+      if (!nama || isNaN(harga)) {
+        alert("Harap isi Nama Menu dan Harga dengan benar!");
+        return;
+      }
+
+      push(menusRef, { nama, harga, kategori }).then(() => {
+        alert("Menu berhasil ditambahkan!");
+        document.getElementById("admin-menu-nama").value = "";
+        document.getElementById("admin-menu-harga").value = "";
+      });
+    };
+
+    window.editMenuPrompt = function(key, namaLama, hargaLama) {
+      const namaBaru = prompt("Edit Nama Menu:", namaLama);
+      if (namaBaru === null) return; // Batal
+
+      const hargaBaruInput = prompt("Edit Harga Menu (Rp):", hargaLama);
+      if (hargaBaruInput === null) return; // Batal
+
+      const hargaBaru = parseInt(hargaBaruInput);
+      if (!namaBaru.trim() || isNaN(hargaBaru)) {
+        alert("Input nama atau harga tidak valid!");
+        return;
+      }
+
+      update(ref(db, 'menus/' + key), {
+        nama: namaBaru.trim(),
+        harga: hargaBaru
+      }).then(() => alert("Menu berhasil di-update!"));
+    };
+
+    window.hapusMenu = function(key, nama) {
+      if (confirm(`Yakin ingin menghapus menu "${nama}"?`)) {
+        remove(ref(db, 'menus/' + key));
+      }
+    };
+
+    function renderAdminMenuTable() {
+      const tbody = document.getElementById("admin-menu-table-body");
+      if (menuList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #9ca3af;">Belum ada menu.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = menuList.map(m => `
+        <tr>
+          <td><strong>${m.nama}</strong></td>
+          <td>${m.kategori}</td>
+          <td>Rp ${m.harga.toLocaleString('id-ID')}</td>
+          <td>
+            <button class="btn btn-accent btn-sm" onclick="editMenuPrompt('${m.firebaseKey}', '${m.nama}', ${m.harga})">✏️ Edit</button>
+            <button class="btn btn-sm" style="background:#dc2626;" onclick="hapusMenu('${m.firebaseKey}', '${m.nama}')">🗑️ Hapus</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // --- PEMESANAN ---
+    window.renderMenu = function() {
+      const container = document.getElementById("menu-container");
+      const filtered = activeFilter === 'semua' ? menuList : menuList.filter(m => m.kategori === activeFilter);
+      
+      if (filtered.length === 0) {
+        container.innerHTML = `<p style="color:#9ca3af; grid-column: 1/-1;">Menu tidak ditemukan.</p>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => `
+        <div class="menu-item-card">
+          <div>
+            <h4>${item.nama}</h4>
+            <div class="price">Rp ${item.harga.toLocaleString('id-ID')}</div>
+          </div>
+          <button class="btn" onclick="tambahKeKeranjang('${item.firebaseKey}')">+ Tambah</button>
+        </div>
+      `).join('');
+    };
+
+    window.filterMenu = function(kategori) {
+      activeFilter = kategori;
+      document.querySelectorAll('.btn-filter').forEach(btn => {
+        btn.classList.toggle('active', btn.innerText.toLowerCase() === kategori.toLowerCase() || (kategori === 'semua' && btn.innerText === 'Semua'));
+      });
+      renderMenu();
+    };
+
+    window.tambahKeKeranjang = function(key) {
+      const item = menuList.find(m => m.firebaseKey === key);
+      if (!item) return;
+
+      const existing = cart.find(i => i.firebaseKey === key);
+      if (existing) {
+        existing.qty++;
+      } else {
+        cart.push({ ...item, qty: 1 });
+      }
+      updateCartDisplay();
+    };
+
+    window.ubahQty = function(key, delta) {
+      const index = cart.findIndex(i => i.firebaseKey === key);
+      if (index !== -1) {
+        cart[index].qty += delta;
+        if (cart[index].qty <= 0) cart.splice(index, 1);
+      }
+      updateCartDisplay();
+    };
+
+    function updateCartDisplay() {
+      const container = document.getElementById("cart-items");
+      const totalContainer = document.getElementById("cart-total");
+
+      if (cart.length === 0) {
+        container.innerHTML = "Belum ada menu yang dipilih.";
+        totalContainer.innerText = "Rp 0";
+        return;
+      }
+
+      container.innerHTML = cart.map(item => `
+        <div class="cart-item">
+          <div>
+            <div><strong>${item.nama}</strong></div>
+            <small>Rp ${item.harga.toLocaleString('id-ID')}</small>
+          </div>
+          <div>
+            <button class="qty-btn" onclick="ubahQty('${item.firebaseKey}', -1)">-</button>
+            <span style="margin: 0 5px;">${item.qty}</span>
+            <button class="qty-btn" onclick="ubahQty('${item.firebaseKey}', 1)">+</button>
+          </div>
+        </div>
+      `).join('');
+
+      const total = cart.reduce((sum, item) => sum + (item.harga * item.qty), 0);
+      totalContainer.innerText = `Rp ${total.toLocaleString('id-ID')}`;
+    }
+
+    window.buatPesanan = function() {
+      const nameInput = document.getElementById("customer-name");
+      const nama = nameInput.value.trim();
+
+      if (!nama) { alert("Isi Nama Pemesan terlebih dahulu!"); return; }
+      if (cart.length === 0) { alert("Pilih menu terlebih dahulu!"); return; }
+
+      const nextNumber = orderHistory.length + 1;
+      const antrianKode = `PJ-${String(nextNumber).padStart(3, '0')}`;
+      const total = cart.reduce((sum, item) => sum + (item.harga * item.qty), 0);
+      const rincian = cart.map(i => `${i.nama} (${i.qty}x)`).join(', ');
+      
+      const now = new Date();
+      const timeStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+      const newOrderRef = push(ordersRef);
+      set(newOrderRef, {
+        noSeq: nextNumber,
+        waktu: timeStr,
+        noAntrian: antrianKode,
+        nama: nama,
+        rincian: rincian,
+        total: total,
+        status: "Menunggu"
+      }).then(() => {
+        alert(`Pesanan Berhasil Disimpan!\nNomor Antrian: ${antrianKode}\nAtas Nama: ${nama}`);
+        cart = [];
+        nameInput.value = "";
+        updateCartDisplay();
+      });
+    };
+
+    // --- KASIR FUNCTIONS ---
+    function renderKasirView() {
+      const listContainer = document.getElementById("kasir-queue-list");
+      if (orderHistory.length === 0) {
+        listContainer.innerHTML = `<p style="color: #9ca3af; text-align: center;">Belum ada antrian aktif.</p>`;
+        return;
+      }
+
+      listContainer.innerHTML = orderHistory.map(item => `
+        <div class="queue-card-item ${item.status === 'Dipanggil' ? 'dipanggil' : (item.status === 'Lunas' ? 'selesai' : '')}">
+          <div>
+            <strong>${item.noAntrian}</strong> - ${item.nama}
+            <div style="font-size: 0.8rem; color: #6b7280;">${item.rincian} (Rp ${item.total.toLocaleString('id-ID')})</div>
+          </div>
+          <span class="badge ${item.status === 'Lunas' ? 'badge-paid' : (item.status === 'Dipanggil' ? 'badge-called' : 'badge-pending')}">
+            ${item.status}
+          </span>
+        </div>
+      `).join('');
+    }
+
+    window.panggilBerikutnya = function() {
+      const nextPending = orderHistory.find(i => i.status === "Menunggu");
+      if (!nextPending) {
+        alert("Tidak ada antrian baru yang menunggu.");
+        return;
+      }
+
+      activeQueueFirebaseKey = nextPending.firebaseKey;
+      update(ref(db, 'orders/' + activeQueueFirebaseKey), { status: "Dipanggil" });
+
+      document.getElementById("kasir-current-num").innerText = nextPending.noAntrian;
+      document.getElementById("kasir-current-name").innerText = `Atas Nama: ${nextPending.nama}`;
+    };
+
+    window.prosesPembayaran = function() {
+      if (!activeQueueFirebaseKey) {
+        alert("Panggil antrian terlebih dahulu sebelum konfirmasi bayar.");
+        return;
+      }
+
+      update(ref(db, 'orders/' + activeQueueFirebaseKey), { status: "Lunas" }).then(() => {
+        alert("Pembayaran berhasil dikonfirmasi LUNAS!");
+        document.getElementById("kasir-current-num").innerText = "--";
+        document.getElementById("kasir-current-name").innerText = "Atas Nama: -";
+        activeQueueFirebaseKey = null;
+      });
+    };
+
+    // --- ADMIN VIEW (REKAP LAPORAN) ---
+    function renderAdminView() {
+      const tbody = document.getElementById("admin-table-body");
+      
+      document.getElementById("stat-total-order").innerText = orderHistory.length;
+      
+      const completed = orderHistory.filter(i => i.status === "Lunas");
+      document.getElementById("stat-completed-order").innerText = completed.length;
+
+      const totalRevenue = completed.reduce((sum, i) => sum + i.total, 0);
+      document.getElementById("stat-total-revenue").innerText = `Rp ${totalRevenue.toLocaleString('id-ID')}`;
+
+      if (orderHistory.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #9ca3af;">Belum ada data transaksi.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = orderHistory.map(item => `
+        <tr>
+          <td>${item.waktu}</td>
+          <td><strong>${item.noAntrian}</strong></td>
+          <td>${item.nama}</td>
+          <td>${item.rincian}</td>
+          <td>Rp ${item.total.toLocaleString('id-ID')}</td>
+          <td>
+            <span class="badge ${item.status === 'Lunas' ? 'badge-paid' : (item.status === 'Dipanggil' ? 'badge-called' : 'badge-pending')}">
+              ${item.status}
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    window.downloadCSV = function() {
+      if (orderHistory.length === 0) {
+        alert("Belum ada data laporan antrian untuk di-download.");
+        return;
+      }
+
+      let csvContent = "data:text/csv;charset=utf-8,";
+      csvContent += "Waktu,No Antrian,Nama Pemesan,Rincian Pesanan,Total (Rp),Status Pembayaran\n";
+
+      orderHistory.forEach(order => {
+        let rincianClean = `"${order.rincian.replace(/"/g, '""')}"`;
+        let row = `${order.waktu},${order.noAntrian},${order.nama},${rincianClean},${order.total},${order.status}`;
+        csvContent += row + "\n";
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      
+      const today = new Date().toISOString().split('T')[0];
+      link.setAttribute("download", `Laporan_PanggonNjajan_${today}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    };
+
+    // --- DISPLAY FUNCTIONS ---
+    function renderDisplayView() {
+      const currentlyCalled = orderHistory.slice().reverse().find(i => i.status === "Dipanggil");
+      
+      if (currentlyCalled) {
+        document.getElementById("display-current-num").innerText = currentlyCalled.noAntrian;
+        document.getElementById("display-current-name").innerText = `Atas Nama: ${currentlyCalled.nama}`;
+      } else {
+        document.getElementById("display-current-num").innerText = "--";
+        document.getElementById("display-current-name").innerText = "Menunggu Panggilan...";
+      }
+
+      const waitingCount = orderHistory.filter(i => i.status === "Menunggu").length;
+      document.getElementById("display-waiting-count").innerText = `${waitingCount} Orang`;
+      
+      const lastAssigned = orderHistory.length > 0 ? orderHistory[orderHistory.length - 1].noAntrian : 'PJ-000';
+      document.getElementById("display-total-assigned").innerText = lastAssigned;
+
+      const displayList = document.getElementById("display-queue-list");
+      if (orderHistory.length === 0) {
+        displayList.innerHTML = `<p style="color: #9ca3af; text-align: center;">Belum ada antrian.</p>`;
+        return;
+      }
+
+      displayList.innerHTML = orderHistory.map(item => `
+        <div class="queue-card-item ${item.status === 'Dipanggil' ? 'dipanggil' : (item.status === 'Lunas' ? 'selesai' : '')}">
+          <div>
+            <strong>${item.noAntrian}</strong> - ${item.nama}
+          </div>
+          <span class="badge ${item.status === 'Lunas' ? 'badge-paid' : (item.status === 'Dipanggil' ? 'badge-called' : 'badge-pending')}">
+            ${item.status}
+          </span>
+        </div>
+      `).join('');
+    }
+
+    // Role Navigation
+    window.switchRole = function(role) {
+      document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.view-container').forEach(view => view.classList.remove('active'));
+
+      if (role === 'pemesanan') {
+        document.querySelectorAll('.role-btn')[0].classList.add('active');
+        document.getElementById('view-pemesanan').classList.add('active');
+      } else if (role === 'kasir') {
+        document.querySelectorAll('.role-btn')[1].classList.add('active');
+        document.getElementById('view-kasir').classList.add('active');
+        renderKasirView();
+      } else if (role === 'admin') {
+        document.querySelectorAll('.role-btn')[2].classList.add('active');
+        document.getElementById('view-admin').classList.add('active');
+        renderAdminView();
+        renderAdminMenuTable();
+      } else if (role === 'display') {
+        document.querySelectorAll('.role-btn')[3].classList.add('active');
+        document.getElementById('view-display').classList.add('active');
+        renderDisplayView();
+      }
+    };
+  </script>
+</body>
+</html>
