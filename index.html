@@ -300,7 +300,10 @@
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
           <h3>Riwayat Transaksi Lengkap</h3>
-          <button class="btn btn-success" onclick="downloadCSV()">📥 Download Laporan (CSV)</button>
+          <div>
+            <button class="btn" style="background:#dc2626;" onclick="hapusSemuaTransaksi()">🗑️ Bersihkan Data Transaksi</button>
+            <button class="btn btn-success" onclick="downloadCSV()">📥 Download Laporan (CSV)</button>
+          </div>
         </div>
 
         <!-- FILTER WAKTU LAPORAN -->
@@ -338,9 +341,12 @@
 
     <!-- VIEW 4: DISPLAY ANTRIAN -->
     <div id="view-display" class="view-container">
-      <div style="margin-bottom: 15px;">
-        <h2>Display Antrian Pelanggan</h2>
-        <p style="color: #6b7280;">Layar monitor informasi antrian untuk ruang tunggu (Hari Ini).</p>
+      <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+        <div>
+          <h2>Display Antrian Pelanggan</h2>
+          <p style="color: #6b7280;">Layar monitor informasi antrian untuk ruang tunggu (Hari Ini).</p>
+        </div>
+        <button class="btn btn-accent btn-sm" onclick="panggilSuara('PJ-001')">📢 Tes Suara Pemanggilan</button>
       </div>
 
       <div class="display-grid">
@@ -401,6 +407,66 @@
     let activeFilter = 'semua';
     let currentReportFilter = 'semua';
     let selectedSpecificDate = null;
+    let lastCalledKey = null;
+
+    // FUNGSI AUDIO TING TONG (WEB AUDIO API)
+    window.playTingTong = function() {
+      try {
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        
+        // Nada 1 (Ting)
+        const osc1 = audioCtx.createOscillator();
+        const gain1 = audioCtx.createGain();
+        osc1.type = 'sine';
+        osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+        gain1.gain.setValueAtTime(0.5, audioCtx.currentTime);
+        gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
+        osc1.connect(gain1);
+        gain1.connect(audioCtx.destination);
+        osc1.start(audioCtx.currentTime);
+        osc1.stop(audioCtx.currentTime + 0.8);
+
+        // Nada 2 (Tong)
+        const osc2 = audioCtx.createOscillator();
+        const gain2 = audioCtx.createGain();
+        osc2.type = 'sine';
+        osc2.frequency.setValueAtTime(523.25, audioCtx.currentTime + 0.4); // C5
+        gain2.gain.setValueAtTime(0.5, audioCtx.currentTime + 0.4);
+        gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.4);
+        osc2.connect(gain2);
+        gain2.connect(audioCtx.destination);
+        osc2.start(audioCtx.currentTime + 0.4);
+        osc2.stop(audioCtx.currentTime + 1.4);
+      } catch (e) {
+        console.error("Audio error:", e);
+      }
+    };
+
+    // FUNGSI SUARA PEMANGGILAN HANYA NOMOR ANTRIAN (TEXT-TO-SPEECH)
+    window.panggilSuara = function(noAntrian) {
+      // Jalankan suara bel ting tong terlebih dahulu
+      playTingTong();
+
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel(); // Hentikan suara sebelumnya jika ada
+
+        // Mengeja nomor antrian agar terbaca jelas (contoh: PJ-001 -> P J 0 0 1)
+        const nomorEja = noAntrian.replace('-', ' ').split('').join(' ');
+        
+        // UCAPAN HANYA MENYEBUTKAN NOMOR ANTRIAN
+        const teksUcap = `Nomor antrian, ${nomorEja}, silakan menuju kasir`;
+        
+        const utterance = new SpeechSynthesisUtterance(teksUcap);
+        utterance.lang = 'id-ID';
+        utterance.rate = 0.88; // Kecepatan bicara
+        utterance.pitch = 1.0;
+
+        // Beri jeda 1.2 detik setelah bel ting tong sebelum mengucapkan kalimat
+        setTimeout(() => {
+          window.speechSynthesis.speak(utterance);
+        }, 1200);
+      }
+    };
 
     const defaultMenus = [
       { nama: "Es Teller", harga: 10000, kategori: "Minuman" },
@@ -444,12 +510,10 @@
       renderDisplayView();
     });
 
-    // PARSING DETEKSI TANGGAL LOKAL SANITIZED
     function getOrderDateObj(order) {
       if (order.timestamp && typeof order.timestamp === 'number') {
         return new Date(order.timestamp);
       }
-      
       if (order.waktu) {
         try {
           const datePart = order.waktu.split(',')[0].trim();
@@ -679,12 +743,26 @@
             <strong>${item.noAntrian}</strong> - ${item.nama}
             <div style="font-size: 0.8rem; color: #6b7280;">${item.rincian} (Rp ${item.total.toLocaleString('id-ID')})</div>
           </div>
-          <span class="badge ${item.status === 'Lunas' ? 'badge-paid' : (item.status === 'Dipanggil' ? 'badge-called' : 'badge-pending')}">
-            ${item.status}
-          </span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button class="btn btn-accent btn-sm" onclick="panggilSpesifik('${item.firebaseKey}')">📢 Panggil</button>
+            <span class="badge ${item.status === 'Lunas' ? 'badge-paid' : (item.status === 'Dipanggil' ? 'badge-called' : 'badge-pending')}">
+              ${item.status}
+            </span>
+          </div>
         </div>
       `).join('');
     }
+
+    window.panggilSpesifik = function(key) {
+      const order = orderHistory.find(i => i.firebaseKey === key);
+      if (!order) return;
+
+      activeQueueFirebaseKey = key;
+      update(ref(db, 'orders/' + activeQueueFirebaseKey), { status: "Dipanggil" });
+
+      document.getElementById("kasir-current-num").innerText = order.noAntrian;
+      document.getElementById("kasir-current-name").innerText = `Atas Nama: ${order.nama}`;
+    };
 
     window.panggilBerikutnya = function() {
       const todayOrders = getTodayOrders();
@@ -694,11 +772,7 @@
         return;
       }
 
-      activeQueueFirebaseKey = nextPending.firebaseKey;
-      update(ref(db, 'orders/' + activeQueueFirebaseKey), { status: "Dipanggil" });
-
-      document.getElementById("kasir-current-num").innerText = nextPending.noAntrian;
-      document.getElementById("kasir-current-name").innerText = `Atas Nama: ${nextPending.nama}`;
+      panggilSpesifik(nextPending.firebaseKey);
     };
 
     window.prosesPembayaran = function() {
@@ -716,6 +790,16 @@
     };
 
     // --- ADMIN ---
+    window.hapusSemuaTransaksi = function() {
+      if (confirm("Apakah Anda yakin ingin menghapus SELURUH data transaksi? Action ini tidak bisa dibatalkan.")) {
+        remove(ordersRef).then(() => {
+          alert("Semua data transaksi berhasil dibersihkan!");
+        }).catch((err) => {
+          alert("Gagal menghapus data: " + err.message);
+        });
+      }
+    };
+
     window.setReportFilter = function(filterType) {
       currentReportFilter = filterType;
       selectedSpecificDate = null;
@@ -849,6 +933,12 @@
       if (currentlyCalled) {
         document.getElementById("display-current-num").innerText = currentlyCalled.noAntrian;
         document.getElementById("display-current-name").innerText = `Atas Nama: ${currentlyCalled.nama}`;
+
+        // Bunyikan Bel & Suara Pemanggilan (Tanpa Nama) jika ada nomor baru yang dipanggil
+        if (lastCalledKey !== currentlyCalled.firebaseKey) {
+          panggilSuara(currentlyCalled.noAntrian);
+          lastCalledKey = currentlyCalled.firebaseKey;
+        }
       } else {
         document.getElementById("display-current-num").innerText = "--";
         document.getElementById("display-current-name").innerText = "Menunggu Panggilan...";
@@ -877,7 +967,7 @@
       `).join('');
     }
 
-    // Role Navigation
+    // Navigation Switcher
     window.switchRole = function(role) {
       document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.view-container').forEach(view => view.classList.remove('active'));
