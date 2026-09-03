@@ -219,7 +219,7 @@
     <div id="view-kasir" class="view-container">
       <div style="margin-bottom: 15px;">
         <h2>Kasir & Pemanggilan Antrian</h2>
-        <p style="color: #6b7280;">Kelola panggilan antrian dan pembayaran pesanan pelanggan secara realtime.</p>
+        <p style="color: #6b7280;">Kelola panggilan antrian dan pembayaran pesanan pelanggan secara realtime (Hari Ini).</p>
       </div>
 
       <div class="kasir-grid">
@@ -234,7 +234,7 @@
         </div>
 
         <div class="card">
-          <h3>Daftar Antrian Aktif</h3>
+          <h3>Daftar Antrian Aktif Hari Ini</h3>
           <br>
           <div class="queue-list" id="kasir-queue-list">
             <p style="color: #9ca3af; text-align: center;">Mengambil data dari Firebase...</p>
@@ -340,7 +340,7 @@
     <div id="view-display" class="view-container">
       <div style="margin-bottom: 15px;">
         <h2>Display Antrian Pelanggan</h2>
-        <p style="color: #6b7280;">Layar monitor informasi antrian untuk ruang tunggu.</p>
+        <p style="color: #6b7280;">Layar monitor informasi antrian untuk ruang tunggu (Hari Ini).</p>
       </div>
 
       <div class="display-grid">
@@ -351,7 +351,7 @@
           
           <div class="display-sub-info">
             <div class="display-sub-card">
-              <span style="color: #6b7280; font-size: 0.9rem;">Total Antrian Masuk</span>
+              <span style="color: #6b7280; font-size: 0.9rem;">Total Antrian Hari Ini</span>
               <h4 id="display-total-assigned">PJ-000</h4>
             </div>
             <div class="display-sub-card">
@@ -362,7 +362,7 @@
         </div>
 
         <div class="card">
-          <h3>Daftar Panggilan</h3>
+          <h3>Daftar Panggilan Hari Ini</h3>
           <br>
           <div class="queue-list" id="display-queue-list">
             <p style="color: #9ca3af; text-align: center;">Mengambil data dari Firebase...</p>
@@ -402,7 +402,6 @@
     let currentReportFilter = 'semua';
     let selectedSpecificDate = null;
 
-    // Menu default awal jika Firebase masih kosong
     const defaultMenus = [
       { nama: "Es Teller", harga: 10000, kategori: "Minuman" },
       { nama: "Alpukat Kocok", harga: 10000, kategori: "Minuman" },
@@ -416,11 +415,10 @@
       { nama: "Siomay Chilli Oil", harga: 10000, kategori: "Makanan" }
     ];
 
-    // LISTEN DATA MENU FIREBASE REALTIME
+    // LISTEN MENU REALTIME
     onValue(menusRef, (snapshot) => {
       const data = snapshot.val();
       menuList = [];
-      
       if (data) {
         Object.keys(data).forEach(key => {
           menuList.push({ firebaseKey: key, ...data[key] });
@@ -428,28 +426,62 @@
       } else {
         defaultMenus.forEach(item => push(menusRef, item));
       }
-
       renderMenu();
       renderAdminMenuTable();
     });
 
-    // LISTEN DATA TRANSAKSI FIREBASE REALTIME
+    // LISTEN TRANSAKSI REALTIME
     onValue(ordersRef, (snapshot) => {
       const data = snapshot.val();
       orderHistory = [];
-      
       if (data) {
         Object.keys(data).forEach(key => {
           orderHistory.push({ firebaseKey: key, ...data[key] });
         });
       }
-
       renderKasirView();
       renderAdminView();
       renderDisplayView();
     });
 
-    // --- MANAJEMEN MENU RESTO (ADMIN) ---
+    // PARSING DETEKSI TANGGAL LOKAL SANITIZED
+    function getOrderDateObj(order) {
+      if (order.timestamp && typeof order.timestamp === 'number') {
+        return new Date(order.timestamp);
+      }
+      
+      if (order.waktu) {
+        try {
+          const datePart = order.waktu.split(',')[0].trim();
+          const parts = datePart.split(/[\/\.-]/);
+          if (parts.length === 3) {
+            const day = parseInt(parts[0], 10);
+            const month = parseInt(parts[1], 10) - 1;
+            const year = parseInt(parts[2], 10);
+            return new Date(year, month, day);
+          }
+        } catch (e) {
+          console.error("Parse error:", e);
+        }
+      }
+      return new Date(2000, 0, 1);
+    }
+
+    function isSameDay(d1, d2) {
+      return d1.getFullYear() === d2.getFullYear() &&
+             d1.getMonth() === d2.getMonth() &&
+             d1.getDate() === d2.getDate();
+    }
+
+    function getTodayOrders() {
+      const now = new Date();
+      return orderHistory.filter(order => {
+        const orderDate = getOrderDateObj(order);
+        return isSameDay(orderDate, now);
+      });
+    }
+
+    // --- MANAJEMEN MENU ---
     window.tambahMenu = function() {
       const nama = document.getElementById("admin-menu-nama").value.trim();
       const harga = parseInt(document.getElementById("admin-menu-harga").value);
@@ -494,6 +526,7 @@
 
     function renderAdminMenuTable() {
       const tbody = document.getElementById("admin-menu-table-body");
+      if (!tbody) return;
       if (menuList.length === 0) {
         tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #9ca3af;">Belum ada menu.</td></tr>`;
         return;
@@ -515,6 +548,7 @@
     // --- PEMESANAN ---
     window.renderMenu = function() {
       const container = document.getElementById("menu-container");
+      if (!container) return;
       const filtered = activeFilter === 'semua' ? menuList : menuList.filter(m => m.kategori === activeFilter);
       
       if (filtered.length === 0) {
@@ -598,7 +632,8 @@
       if (!nama) { alert("Isi Nama Pemesan terlebih dahulu!"); return; }
       if (cart.length === 0) { alert("Pilih menu terlebih dahulu!"); return; }
 
-      const nextNumber = orderHistory.length + 1;
+      const todayOrders = getTodayOrders();
+      const nextNumber = todayOrders.length + 1;
       const antrianKode = `PJ-${String(nextNumber).padStart(3, '0')}`;
       const total = cart.reduce((sum, item) => sum + (item.harga * item.qty), 0);
       const rincian = cart.map(i => `${i.nama} (${i.qty}x)`).join(', ');
@@ -612,7 +647,7 @@
       set(newOrderRef, {
         noSeq: nextNumber,
         waktu: timeStr,
-        timestamp: now.getTime(), // Disimpan untuk kemudahan pencarian filter waktu
+        timestamp: now.getTime(),
         noAntrian: antrianKode,
         nama: nama,
         rincian: rincian,
@@ -626,15 +661,19 @@
       });
     };
 
-    // --- KASIR FUNCTIONS ---
+    // --- KASIR ---
     function renderKasirView() {
       const listContainer = document.getElementById("kasir-queue-list");
-      if (orderHistory.length === 0) {
-        listContainer.innerHTML = `<p style="color: #9ca3af; text-align: center;">Belum ada antrian aktif.</p>`;
+      if (!listContainer) return;
+
+      const todayOrders = getTodayOrders();
+
+      if (todayOrders.length === 0) {
+        listContainer.innerHTML = `<p style="color: #9ca3af; text-align: center;">Belum ada antrian aktif hari ini.</p>`;
         return;
       }
 
-      listContainer.innerHTML = orderHistory.map(item => `
+      listContainer.innerHTML = todayOrders.map(item => `
         <div class="queue-card-item ${item.status === 'Dipanggil' ? 'dipanggil' : (item.status === 'Lunas' ? 'selesai' : '')}">
           <div>
             <strong>${item.noAntrian}</strong> - ${item.nama}
@@ -648,9 +687,10 @@
     }
 
     window.panggilBerikutnya = function() {
-      const nextPending = orderHistory.find(i => i.status === "Menunggu");
+      const todayOrders = getTodayOrders();
+      const nextPending = todayOrders.find(i => i.status === "Menunggu");
       if (!nextPending) {
-        alert("Tidak ada antrian baru yang menunggu.");
+        alert("Tidak ada antrian baru yang menunggu hari ini.");
         return;
       }
 
@@ -675,7 +715,7 @@
       });
     };
 
-    // --- ADMIN VIEW (FILTER LAPORAN & REKAP) ---
+    // --- ADMIN ---
     window.setReportFilter = function(filterType) {
       currentReportFilter = filterType;
       selectedSpecificDate = null;
@@ -696,46 +736,28 @@
       const dateVal = document.getElementById("report-date-picker").value;
       if (!dateVal) return;
 
-      selectedSpecificDate = dateVal; // YYYY-MM-DD
+      selectedSpecificDate = dateVal;
       currentReportFilter = 'spesifik';
 
       document.querySelectorAll('.btn-report-filter').forEach(btn => btn.classList.remove('active'));
       renderAdminView();
     };
 
-    function parseOrderDate(order) {
-      if (order.timestamp) {
-        return new Date(order.timestamp);
-      }
-      // Fallback parsing jika timestamp lama belum tersimpan: "31/08/2026, 11.20"
-      if (order.waktu) {
-        const parts = order.waktu.split(',');
-        if (parts[0]) {
-          const dateParts = parts[0].trim().split('/');
-          if (dateParts.length === 3) {
-            return new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
-          }
-        }
-      }
-      return new Date();
-    }
-
     function getFilteredHistory() {
       const now = new Date();
 
       return orderHistory.filter(order => {
-        const orderDate = parseOrderDate(order);
+        const orderDate = getOrderDateObj(order);
 
         if (currentReportFilter === 'spesifik' && selectedSpecificDate) {
           const year = orderDate.getFullYear();
           const month = String(orderDate.getMonth() + 1).padStart(2, '0');
           const day = String(orderDate.getDate()).padStart(2, '0');
-          const formattedOrderDate = `${year}-${month}-${day}`;
-          return formattedOrderDate === selectedSpecificDate;
+          return `${year}-${month}-${day}` === selectedSpecificDate;
         }
 
         if (currentReportFilter === 'hari_ini') {
-          return orderDate.toDateString() === now.toDateString();
+          return isSameDay(orderDate, now);
         }
 
         if (currentReportFilter === 'mingguan') {
@@ -749,12 +771,14 @@
           return orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
         }
 
-        return true; // 'semua'
+        return true;
       });
     }
 
     function renderAdminView() {
       const tbody = document.getElementById("admin-table-body");
+      if (!tbody) return;
+
       const filteredData = getFilteredHistory();
       
       document.getElementById("stat-total-order").innerText = filteredData.length;
@@ -814,9 +838,13 @@
       document.body.removeChild(link);
     };
 
-    // --- DISPLAY FUNCTIONS ---
+    // --- DISPLAY VIEW ---
     function renderDisplayView() {
-      const currentlyCalled = orderHistory.slice().reverse().find(i => i.status === "Dipanggil");
+      const displayList = document.getElementById("display-queue-list");
+      if (!displayList) return;
+
+      const todayOrders = getTodayOrders();
+      const currentlyCalled = todayOrders.slice().reverse().find(i => i.status === "Dipanggil");
       
       if (currentlyCalled) {
         document.getElementById("display-current-num").innerText = currentlyCalled.noAntrian;
@@ -826,19 +854,18 @@
         document.getElementById("display-current-name").innerText = "Menunggu Panggilan...";
       }
 
-      const waitingCount = orderHistory.filter(i => i.status === "Menunggu").length;
+      const waitingCount = todayOrders.filter(i => i.status === "Menunggu").length;
       document.getElementById("display-waiting-count").innerText = `${waitingCount} Orang`;
       
-      const lastAssigned = orderHistory.length > 0 ? orderHistory[orderHistory.length - 1].noAntrian : 'PJ-000';
+      const lastAssigned = todayOrders.length > 0 ? todayOrders[todayOrders.length - 1].noAntrian : 'PJ-000';
       document.getElementById("display-total-assigned").innerText = lastAssigned;
 
-      const displayList = document.getElementById("display-queue-list");
-      if (orderHistory.length === 0) {
-        displayList.innerHTML = `<p style="color: #9ca3af; text-align: center;">Belum ada antrian.</p>`;
+      if (todayOrders.length === 0) {
+        displayList.innerHTML = `<p style="color: #9ca3af; text-align: center;">Belum ada antrian hari ini.</p>`;
         return;
       }
 
-      displayList.innerHTML = orderHistory.map(item => `
+      displayList.innerHTML = todayOrders.map(item => `
         <div class="queue-card-item ${item.status === 'Dipanggil' ? 'dipanggil' : (item.status === 'Lunas' ? 'selesai' : '')}">
           <div>
             <strong>${item.noAntrian}</strong> - ${item.nama}
