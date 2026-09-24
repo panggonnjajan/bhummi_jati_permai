@@ -76,6 +76,7 @@
     .btn-accent:hover { background: var(--accent-hover); }
     .btn-success { background: var(--success); }
     .btn-success:hover { background: var(--success-hover); }
+    .btn-info { background: var(--info); }
     .btn-sm { padding: 4px 10px; font-size: 0.8rem; border-radius: 6px; }
 
     .view-container { display: none; }
@@ -114,10 +115,38 @@
 
     /* VIEW 2: KASIR */
     .kasir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .call-box { text-align: center; padding: 30px; }
-    .queue-big-num { font-size: 4rem; font-weight: bold; color: var(--primary); margin: 10px 0; }
-    .queue-name { font-size: 1.4rem; font-weight: 600; color: #4b5563; margin-bottom: 20px; }
+    .call-box { text-align: center; padding: 20px; }
+    .queue-big-num { font-size: 3.5rem; font-weight: bold; color: var(--primary); margin: 5px 0; }
+    .queue-name { font-size: 1.2rem; font-weight: 600; color: #4b5563; margin-bottom: 15px; }
     
+    .pay-input-box {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      text-align: left;
+    }
+    .pay-input-box label { font-size: 0.85rem; font-weight: bold; color: #475569; display: block; margin-bottom: 4px; }
+    .pay-input-box input {
+      width: 100%;
+      padding: 8px 12px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+    .change-display {
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+      font-size: 1.1rem;
+      color: var(--success);
+      padding-top: 5px;
+      border-top: 1px dashed #cbd5e1;
+    }
+
     .queue-list { max-height: 400px; overflow-y: auto; }
     .queue-card-item {
       padding: 12px 15px;
@@ -156,6 +185,48 @@
     .display-big-num { font-size: 5.5rem; font-weight: 800; color: var(--primary); line-height: 1.1; margin: 15px 0; }
     .display-sub-info { display: flex; justify-content: space-around; margin-top: 30px; border-top: 2px solid #f3f4f6; padding-top: 20px; }
     .display-sub-card { text-align: center; }
+
+    /* MODAL STRUK PEMBAYARAN */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    .modal-content {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      width: 320px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .receipt {
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 13px;
+      line-height: 1.4;
+      color: #000;
+    }
+    .receipt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 8px; }
+    .receipt-header h2 { font-size: 16px; font-weight: bold; margin-bottom: 2px; }
+    .receipt-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+    .receipt-divider { border-top: 1px dashed #000; margin: 8px 0; }
+    .receipt-footer { text-align: center; margin-top: 10px; font-size: 11px; }
+
+    @media print {
+      body * { visibility: hidden; }
+      #printable-receipt, #printable-receipt * { visibility: visible; }
+      #printable-receipt {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+      }
+      .modal-overlay { background: transparent; }
+      .no-print { display: none !important; }
+    }
 
     @media (max-width: 768px) {
       .menu-layout, .kasir-grid, .stat-cards, .display-grid { grid-template-columns: 1fr; }
@@ -227,9 +298,25 @@
           <h3>Antrian Dipanggil</h3>
           <div class="queue-big-num" id="kasir-current-num">--</div>
           <div class="queue-name" id="kasir-current-name">Atas Nama: -</div>
-          <div style="display: flex; gap: 10px; justify-content: center;">
-            <button class="btn btn-accent" style="font-size: 1rem;" onclick="panggilBerikutnya()">📢 Panggil Selanjutnya</button>
-            <button class="btn btn-success" style="font-size: 1rem;" onclick="prosesPembayaran()">💵 Konfirmasi Lunas</button>
+
+          <!-- INPUT PEMBAYARAN KASIR -->
+          <div class="pay-input-box">
+            <div class="receipt-row" style="margin-bottom:8px; font-weight:bold;">
+              <span>Total Tagihan:</span>
+              <span id="kasir-total-tagihan" style="color:var(--primary);">Rp 0</span>
+            </div>
+            <label for="kasir-input-bayar">Nominal Bayar (Rp):</label>
+            <input type="number" id="kasir-input-bayar" placeholder="0" oninput="hitungKembalian()">
+            <div class="change-display">
+              <span>Kembalian:</span>
+              <span id="kasir-kembalian">Rp 0</span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+            <button class="btn btn-accent" style="font-size: 0.9rem;" onclick="panggilBerikutnya()">📢 Panggil Selanjutnya</button>
+            <button class="btn btn-success" style="font-size: 0.9rem;" onclick="prosesPembayaran()">💵 Konfirmasi Lunas</button>
+            <button class="btn btn-info" style="font-size: 0.9rem;" onclick="bukaStrukTerkini()">🖨️ Cetak Struk</button>
           </div>
         </div>
 
@@ -328,11 +415,14 @@
                 <th>Nama Pemesan</th>
                 <th>Rincian Pesanan</th>
                 <th>Total (Rp)</th>
+                <th>Bayar (Rp)</th>
+                <th>Kembali (Rp)</th>
                 <th>Status Pembayaran</th>
+                <th>Aksi</th>
               </tr>
             </thead>
             <tbody id="admin-table-body">
-              <tr><td colspan="6" style="text-align: center; color: #9ca3af;">Mengambil data dari Firebase...</td></tr>
+              <tr><td colspan="9" style="text-align: center; color: #9ca3af;">Mengambil data dari Firebase...</td></tr>
             </tbody>
           </table>
         </div>
@@ -379,6 +469,38 @@
 
   </div>
 
+  <!-- MODAL CETAK STRUK -->
+  <div class="modal-overlay" id="modal-struk">
+    <div class="modal-content">
+      <div id="printable-receipt" class="receipt">
+        <div class="receipt-header">
+          <h2>PANGGON NJAJAN</h2>
+          <div>Bhummi Jati Permai LL 04 Jatirembe Gresik</div>
+          <div>Telp: 085100000066</div>
+        </div>
+        <div class="receipt-row"><span>Tgl:</span><span id="struk-waktu">-</span></div>
+        <div class="receipt-row"><span>No. Antrian:</span><strong id="struk-no">-</strong></div>
+        <div class="receipt-row"><span>Pelanggan:</span><span id="struk-nama">-</span></div>
+        <div class="receipt-divider"></div>
+        <div id="struk-items"></div>
+        <div class="receipt-divider"></div>
+        <div class="receipt-row"><span>Total Tagihan:</span><strong id="struk-total">Rp 0</strong></div>
+        <div class="receipt-row"><span>Bayar:</span><span id="struk-bayar">Rp 0</span></div>
+        <div class="receipt-row"><span>Kembalian:</span><span id="struk-kembali">Rp 0</span></div>
+        <div class="receipt-divider"></div>
+        <div class="receipt-footer">
+          *** TERIMA KASIH ***<br>
+          Selamat Menikmati Hidangan Anda
+        </div>
+      </div>
+      <div style="margin-top: 15px; display: flex; gap: 6px; flex-wrap: wrap;" class="no-print">
+        <button class="btn btn-success" style="flex: 1;" onclick="window.print()">🖨️ Cetak</button>
+        <button class="btn" style="flex: 1; background:#25D366;" onclick="kirimStrukWA()">📱 Kirim WA</button>
+        <button class="btn" style="background:#6b7280;" onclick="tutupStruk()">Tutup</button>
+      </div>
+    </div>
+  </div>
+
   <!-- FIREBASE REALTIME SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -408,6 +530,7 @@
     let currentReportFilter = 'semua';
     let selectedSpecificDate = null;
     let lastCalledKey = null;
+    let activeStrukData = null;
 
     // FUNGSI AUDIO TING TONG (WEB AUDIO API)
     window.playTingTong = function() {
@@ -444,24 +567,19 @@
 
     // FUNGSI SUARA PEMANGGILAN HANYA NOMOR ANTRIAN (TEXT-TO-SPEECH)
     window.panggilSuara = function(noAntrian) {
-      // Jalankan suara bel ting tong terlebih dahulu
       playTingTong();
 
       if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel(); // Hentikan suara sebelumnya jika ada
+        window.speechSynthesis.cancel();
 
-        // Mengeja nomor antrian agar terbaca jelas (contoh: PJ-001 -> P J 0 0 1)
         const nomorEja = noAntrian.replace('-', ' ').split('').join(' ');
-        
-        // UCAPAN HANYA MENYEBUTKAN NOMOR ANTRIAN
         const teksUcap = `Nomor antrian, ${nomorEja}, silakan menuju kasir`;
         
         const utterance = new SpeechSynthesisUtterance(teksUcap);
         utterance.lang = 'id-ID';
-        utterance.rate = 0.88; // Kecepatan bicara
+        utterance.rate = 0.88;
         utterance.pitch = 1.0;
 
-        // Beri jeda 1.2 detik setelah bel ting tong sebelum mengucapkan kalimat
         setTimeout(() => {
           window.speechSynthesis.speak(utterance);
         }, 1200);
@@ -716,6 +834,8 @@
         nama: nama,
         rincian: rincian,
         total: total,
+        bayar: 0,
+        kembalian: 0,
         status: "Menunggu"
       }).then(() => {
         alert(`Pesanan Berhasil Disimpan!\nNomor Antrian: ${antrianKode}\nAtas Nama: ${nama}`);
@@ -725,7 +845,7 @@
       });
     };
 
-    // --- KASIR ---
+    // --- KASIR & PEMBAYARAN ---
     function renderKasirView() {
       const listContainer = document.getElementById("kasir-queue-list");
       if (!listContainer) return;
@@ -762,6 +882,11 @@
 
       document.getElementById("kasir-current-num").innerText = order.noAntrian;
       document.getElementById("kasir-current-name").innerText = `Atas Nama: ${order.nama}`;
+      document.getElementById("kasir-total-tagihan").innerText = `Rp ${order.total.toLocaleString('id-ID')}`;
+      
+      const inputBayar = document.getElementById("kasir-input-bayar");
+      inputBayar.value = order.bayar > 0 ? order.bayar : "";
+      hitungKembalian();
     };
 
     window.panggilBerikutnya = function() {
@@ -775,18 +900,139 @@
       panggilSpesifik(nextPending.firebaseKey);
     };
 
+    window.hitungKembalian = function() {
+      if (!activeQueueFirebaseKey) return;
+      const order = orderHistory.find(i => i.firebaseKey === activeQueueFirebaseKey);
+      if (!order) return;
+
+      const bayar = parseInt(document.getElementById("kasir-input-bayar").value) || 0;
+      const kembalian = bayar - order.total;
+
+      const kembalianEl = document.getElementById("kasir-kembalian");
+      if (kembalian >= 0) {
+        kembalianEl.innerText = `Rp ${kembalian.toLocaleString('id-ID')}`;
+        kembalianEl.style.color = "var(--success)";
+      } else {
+        kembalianEl.innerText = `- Rp ${Math.abs(kembalian).toLocaleString('id-ID')}`;
+        kembalianEl.style.color = "var(--primary)";
+      }
+    };
+
     window.prosesPembayaran = function() {
       if (!activeQueueFirebaseKey) {
         alert("Panggil antrian terlebih dahulu sebelum konfirmasi bayar.");
         return;
       }
 
-      update(ref(db, 'orders/' + activeQueueFirebaseKey), { status: "Lunas" }).then(() => {
+      const order = orderHistory.find(i => i.firebaseKey === activeQueueFirebaseKey);
+      if (!order) return;
+
+      const bayar = parseInt(document.getElementById("kasir-input-bayar").value) || 0;
+      if (bayar < order.total) {
+        alert(`Uang pembayaran kurang! Total tagihan Rp ${order.total.toLocaleString('id-ID')}`);
+        return;
+      }
+
+      const kembalian = bayar - order.total;
+
+      update(ref(db, 'orders/' + activeQueueFirebaseKey), { 
+        status: "Lunas",
+        bayar: bayar,
+        kembalian: kembalian
+      }).then(() => {
         alert("Pembayaran berhasil dikonfirmasi LUNAS!");
+        bukaStruk(order, bayar, kembalian);
+        
         document.getElementById("kasir-current-num").innerText = "--";
         document.getElementById("kasir-current-name").innerText = "Atas Nama: -";
+        document.getElementById("kasir-total-tagihan").innerText = "Rp 0";
+        document.getElementById("kasir-input-bayar").value = "";
+        document.getElementById("kasir-kembalian").innerText = "Rp 0";
         activeQueueFirebaseKey = null;
       });
+    };
+
+    // --- CETAK & KIRIM STRUK ---
+    window.bukaStrukTerkini = function() {
+      if (!activeQueueFirebaseKey) {
+        alert("Pilih antrian terlebih dahulu!");
+        return;
+      }
+      const order = orderHistory.find(i => i.firebaseKey === activeQueueFirebaseKey);
+      if (!order) return;
+
+      const bayar = parseInt(document.getElementById("kasir-input-bayar").value) || order.bayar || 0;
+      const kembalian = bayar >= order.total ? bayar - order.total : (order.kembalian || 0);
+
+      bukaStruk(order, bayar, kembalian);
+    };
+
+    window.bukaStrukByKey = function(key) {
+      const order = orderHistory.find(i => i.firebaseKey === key);
+      if (!order) return;
+      bukaStruk(order, order.bayar || order.total, order.kembalian || 0);
+    };
+
+    function bukaStruk(order, bayar, kembalian) {
+      activeStrukData = { order, bayar, kembalian };
+      
+      document.getElementById("struk-waktu").innerText = order.waktu;
+      document.getElementById("struk-no").innerText = order.noAntrian;
+      document.getElementById("struk-nama").innerText = order.nama;
+      
+      const itemsContainer = document.getElementById("struk-items");
+      const rincianArr = order.rincian.split(',');
+      itemsContainer.innerHTML = rincianArr.map(item => `
+        <div class="receipt-row">
+          <span>${item.trim()}</span>
+        </div>
+      `).join('');
+
+      document.getElementById("struk-total").innerText = `Rp ${order.total.toLocaleString('id-ID')}`;
+      document.getElementById("struk-bayar").innerText = `Rp ${(bayar || 0).toLocaleString('id-ID')}`;
+      document.getElementById("struk-kembali").innerText = `Rp ${(kembalian || 0).toLocaleString('id-ID')}`;
+
+      document.getElementById("modal-struk").style.display = "flex";
+    }
+
+    window.kirimStrukWA = function() {
+      if (!activeStrukData) return;
+      const { order, bayar, kembalian } = activeStrukData;
+      
+      let phone = prompt("Masukkan nomor WhatsApp pelanggan (contoh: 08123456789):");
+      if (!phone) return;
+
+      phone = phone.trim().replace(/[^0-9]/g, '');
+      if (phone.startsWith('0')) {
+        phone = '62' + phone.slice(1);
+      }
+
+      const rincianTeks = order.rincian.split(',').map(item => `• ${item.trim()}`).join('\n');
+
+      const pesan = `*PANGGON NJAJAN*
+Bhummi Jati Permai LL 04 Jatirembe Gresik
+Telp: 085100000066
+----------------------------------
+Tgl: ${order.waktu}
+No. Antrian: *${order.noAntrian}*
+Pelanggan: ${order.nama}
+----------------------------------
+*Pesanan:*
+${rincianTeks}
+----------------------------------
+*Total Tagihan:* Rp ${order.total.toLocaleString('id-ID')}
+*Bayar:* Rp ${(bayar || 0).toLocaleString('id-ID')}
+*Kembalian:* Rp ${(kembalian || 0).toLocaleString('id-ID')}
+----------------------------------
+*** TERIMA KASIH ***
+Selamat Menikmati Hidangan Anda`;
+
+      const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(pesan)}`;
+      window.open(waUrl, '_blank');
+    };
+
+    window.tutupStruk = function() {
+      document.getElementById("modal-struk").style.display = "none";
     };
 
     // --- ADMIN ---
@@ -874,7 +1120,7 @@
       document.getElementById("stat-total-revenue").innerText = `Rp ${totalRevenue.toLocaleString('id-ID')}`;
 
       if (filteredData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: #9ca3af;">Tidak ada data transaksi pada periode/tanggal ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #9ca3af;">Tidak ada data transaksi pada periode/tanggal ini.</td></tr>`;
         return;
       }
 
@@ -885,10 +1131,15 @@
           <td>${item.nama}</td>
           <td>${item.rincian}</td>
           <td>Rp ${item.total.toLocaleString('id-ID')}</td>
+          <td>Rp ${(item.bayar || 0).toLocaleString('id-ID')}</td>
+          <td>Rp ${(item.kembalian || 0).toLocaleString('id-ID')}</td>
           <td>
             <span class="badge ${item.status === 'Lunas' ? 'badge-paid' : (item.status === 'Dipanggil' ? 'badge-called' : 'badge-pending')}">
               ${item.status}
             </span>
+          </td>
+          <td>
+            <button class="btn btn-info btn-sm" onclick="bukaStrukByKey('${item.firebaseKey}')">🖨️ Struk</button>
           </td>
         </tr>
       `).join('');
@@ -903,11 +1154,11 @@
       }
 
       let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Tanggal & Waktu,No Antrian,Nama Pemesan,Rincian Pesanan,Total (Rp),Status Pembayaran\n";
+      csvContent += "Tanggal & Waktu,No Antrian,Nama Pemesan,Rincian Pesanan,Total (Rp),Bayar (Rp),Kembalian (Rp),Status Pembayaran\n";
 
       filteredData.forEach(order => {
         let rincianClean = `"${order.rincian.replace(/"/g, '""')}"`;
-        let row = `${order.waktu},${order.noAntrian},${order.nama},${rincianClean},${order.total},${order.status}`;
+        let row = `${order.waktu},${order.noAntrian},${order.nama},${rincianClean},${order.total},${order.bayar || 0},${order.kembalian || 0},${order.status}`;
         csvContent += row + "\n";
       });
 
@@ -934,7 +1185,6 @@
         document.getElementById("display-current-num").innerText = currentlyCalled.noAntrian;
         document.getElementById("display-current-name").innerText = `Atas Nama: ${currentlyCalled.nama}`;
 
-        // Bunyikan Bel & Suara Pemanggilan (Tanpa Nama) jika ada nomor baru yang dipanggil
         if (lastCalledKey !== currentlyCalled.firebaseKey) {
           panggilSuara(currentlyCalled.noAntrian);
           lastCalledKey = currentlyCalled.firebaseKey;
