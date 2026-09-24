@@ -21,7 +21,6 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
     body { background-color: var(--bg); color: var(--text); padding-bottom: 40px; }
 
-    /* Navigasi */
     nav {
       background: var(--primary);
       color: white;
@@ -51,7 +50,6 @@
 
     .main-content { max-width: 1100px; margin: 20px auto; padding: 0 15px; }
 
-    /* Cards & Buttons */
     .card { 
       background: var(--card-bg); 
       padding: 20px; 
@@ -82,7 +80,6 @@
     .view-container { display: none; }
     .view-container.active { display: block; }
 
-    /* VIEW 1: PEMESANAN */
     .menu-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
     .filter-container { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
     .btn-filter {
@@ -109,11 +106,19 @@
     .menu-item-card h4 { font-size: 1rem; margin-bottom: 6px; }
     .menu-item-card .price { color: var(--primary); font-weight: bold; margin-bottom: 10px; }
 
+    .option-select {
+      width: 100%;
+      padding: 6px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      font-size: 0.85rem;
+    }
+
     .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14px; border-bottom: 1px dashed #e5e7eb; padding-bottom: 8px; }
     .qty-btn { background: #e5e7eb; border: none; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
     .total { border-top: 2px solid #f3f4f6; padding-top: 12px; margin-top: 12px; font-weight: bold; font-size: 1.1rem; display: flex; justify-content: space-between; }
 
-    /* VIEW 2: KASIR */
     .kasir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
     .call-box { text-align: center; padding: 20px; }
     .queue-big-num { font-size: 3.5rem; font-weight: bold; color: var(--primary); margin: 5px 0; }
@@ -161,7 +166,6 @@
     .queue-card-item.dipanggil { background: #fef3c7; border-color: #f59e0b; }
     .queue-card-item.selesai { background: #d1fae5; border-color: #10b981; }
 
-    /* VIEW 3: ADMIN & TABLES */
     table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
     th, td { border: 1px solid #e5e7eb; padding: 10px; text-align: left; }
     th { background-color: #ffe4e6; color: var(--primary); }
@@ -179,14 +183,12 @@
     .form-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
     .form-control { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; flex: 1; min-width: 150px; }
 
-    /* VIEW 4: DISPLAY */
     .display-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
     .display-main-box { text-align: center; padding: 40px 20px; background: #fff; border: 3px solid var(--primary); border-radius: 16px; }
     .display-big-num { font-size: 5.5rem; font-weight: 800; color: var(--primary); line-height: 1.1; margin: 15px 0; }
     .display-sub-info { display: flex; justify-content: space-around; margin-top: 30px; border-top: 2px solid #f3f4f6; padding-top: 20px; }
     .display-sub-card { text-align: center; }
 
-    /* MODAL STRUK PEMBAYARAN */
     .modal-overlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -236,7 +238,6 @@
 </head>
 <body>
 
-  <!-- Top Navbar Switcher -->
   <nav>
     <h1>Panggon Njajan System</h1>
     <div class="role-switcher">
@@ -299,7 +300,6 @@
           <div class="queue-big-num" id="kasir-current-num">--</div>
           <div class="queue-name" id="kasir-current-name">Atas Nama: -</div>
 
-          <!-- INPUT PEMBAYARAN KASIR -->
           <div class="pay-input-box">
             <div class="receipt-row" style="margin-bottom:8px; font-weight:bold;">
               <span>Total Tagihan:</span>
@@ -330,14 +330,13 @@
       </div>
     </div>
 
-    <!-- VIEW 3: ADMIN (MANAJEMEN MENU & LAPORAN) -->
+    <!-- VIEW 3: ADMIN -->
     <div id="view-admin" class="view-container">
       <div style="margin-bottom: 15px;">
         <h2>Dashboard Admin</h2>
         <p style="color: #6b7280;">Kelola menu resto dan pantau data transaksi realtime.</p>
       </div>
 
-      <!-- KELOLA MENU RESTO -->
       <div class="card">
         <h3>🍔 Kelola Menu Resto (Tambah & Edit)</h3>
         <br>
@@ -368,7 +367,6 @@
         </div>
       </div>
 
-      <!-- DASHBOARD REKAP -->
       <div class="stat-cards">
         <div class="stat-card">
           <span>Total Pesanan</span>
@@ -393,7 +391,6 @@
           </div>
         </div>
 
-        <!-- FILTER WAKTU LAPORAN -->
         <div class="filter-container" style="margin-bottom: 15px; align-items: center;">
           <button class="btn-filter btn-report-filter active" onclick="setReportFilter('semua')">Semua Transaksi</button>
           <button class="btn-filter btn-report-filter" onclick="setReportFilter('hari_ini')">Hari Ini</button>
@@ -429,7 +426,7 @@
       </div>
     </div>
 
-    <!-- VIEW 4: DISPLAY ANTRIAN -->
+    <!-- VIEW 4: DISPLAY -->
     <div id="view-display" class="view-container">
       <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
         <div>
@@ -469,7 +466,7 @@
 
   </div>
 
-  <!-- MODAL CETAK STRUK -->
+  <!-- MODAL STRUK -->
   <div class="modal-overlay" id="modal-struk">
     <div class="modal-content">
       <div id="printable-receipt" class="receipt">
@@ -495,13 +492,12 @@
       </div>
       <div style="margin-top: 15px; display: flex; gap: 6px; flex-wrap: wrap;" class="no-print">
         <button class="btn btn-success" style="flex: 1;" onclick="window.print()">🖨️ Cetak</button>
-        <button class="btn" style="flex: 1; background:#25D366;" onclick="kirimStrukWA()">📱 Kirim WA</button>
+        <button class="btn" style="background:#25D366;" onclick="kirimStrukWA()">📱 Kirim WA</button>
         <button class="btn" style="background:#6b7280;" onclick="tutupStruk()">Tutup</button>
       </div>
     </div>
   </div>
 
-  <!-- FIREBASE REALTIME SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
     import { getDatabase, ref, push, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -532,16 +528,14 @@
     let lastCalledKey = null;
     let activeStrukData = null;
 
-    // FUNGSI AUDIO TING TONG (WEB AUDIO API)
     window.playTingTong = function() {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         
-        // Nada 1 (Ting)
         const osc1 = audioCtx.createOscillator();
         const gain1 = audioCtx.createGain();
         osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime); // E5
+        osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime);
         gain1.gain.setValueAtTime(0.5, audioCtx.currentTime);
         gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
         osc1.connect(gain1);
@@ -549,11 +543,10 @@
         osc1.start(audioCtx.currentTime);
         osc1.stop(audioCtx.currentTime + 0.8);
 
-        // Nada 2 (Tong)
         const osc2 = audioCtx.createOscillator();
         const gain2 = audioCtx.createGain();
         osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(523.25, audioCtx.currentTime + 0.4); // C5
+        osc2.frequency.setValueAtTime(523.25, audioCtx.currentTime + 0.4);
         gain2.gain.setValueAtTime(0.5, audioCtx.currentTime + 0.4);
         gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.4);
         osc2.connect(gain2);
@@ -565,7 +558,6 @@
       }
     };
 
-    // FUNGSI SUARA PEMANGGILAN HANYA NOMOR ANTRIAN (TEXT-TO-SPEECH)
     window.panggilSuara = function(noAntrian) {
       playTingTong();
 
@@ -599,7 +591,6 @@
       { nama: "Siomay Chilli Oil", harga: 10000, kategori: "Makanan" }
     ];
 
-    // LISTEN MENU REALTIME
     onValue(menusRef, (snapshot) => {
       const data = snapshot.val();
       menuList = [];
@@ -614,7 +605,6 @@
       renderAdminMenuTable();
     });
 
-    // LISTEN TRANSAKSI REALTIME
     onValue(ordersRef, (snapshot) => {
       const data = snapshot.val();
       orderHistory = [];
@@ -663,7 +653,6 @@
       });
     }
 
-    // --- MANAJEMEN MENU ---
     window.tambahMenu = function() {
       const nama = document.getElementById("admin-menu-nama").value.trim();
       const harga = parseInt(document.getElementById("admin-menu-harga").value);
@@ -738,15 +727,42 @@
         return;
       }
 
-      container.innerHTML = filtered.map(item => `
-        <div class="menu-item-card">
-          <div>
-            <h4>${item.nama}</h4>
-            <div class="price">Rp ${item.harga.toLocaleString('id-ID')}</div>
+      container.innerHTML = filtered.map(item => {
+        const isChilliOil = item.nama.toLowerCase().includes("chilli oil");
+        const isMie = item.kategori === "Makanan" && !isChilliOil;
+
+        let optionsHtml = "";
+        if (isMie) {
+          optionsHtml = `
+            <select id="option-${item.firebaseKey}" class="option-select">
+              <option value="Level 0 (Tidak Pedas)">Level 0 (Tidak Pedas)</option>
+              <option value="Level 1 (Agak Pedas)">Level 1 (Agak Pedas)</option>
+              <option value="Level 2 (Sedang)">Level 2 (Sedang)</option>
+              <option value="Level 3 (Pedas)">Level 3 (Pedas)</option>
+              <option value="Level 4 (Sangat Pedas)">Level 4 (Sangat Pedas)</option>
+              <option value="Level 5 (Ekstra Pedas)">Level 5 (Ekstra Pedas)</option>
+            </select>
+          `;
+        } else if (isChilliOil) {
+          optionsHtml = `
+            <select id="option-${item.firebaseKey}" class="option-select">
+              <option value="Campur">Chilli Oil: Campur</option>
+              <option value="Pisah">Chilli Oil: Pisah</option>
+            </select>
+          `;
+        }
+
+        return `
+          <div class="menu-item-card">
+            <div>
+              <h4>${item.nama}</h4>
+              <div class="price">Rp ${item.harga.toLocaleString('id-ID')}</div>
+              ${optionsHtml}
+            </div>
+            <button class="btn" onclick="tambahKeKeranjang('${item.firebaseKey}')">+ Tambah</button>
           </div>
-          <button class="btn" onclick="tambahKeKeranjang('${item.firebaseKey}')">+ Tambah</button>
-        </div>
-      `).join('');
+        `;
+      }).join('');
     };
 
     window.filterMenu = function(kategori) {
@@ -761,17 +777,26 @@
       const item = menuList.find(m => m.firebaseKey === key);
       if (!item) return;
 
-      const existing = cart.find(i => i.firebaseKey === key);
+      let optionText = "";
+      const selectEl = document.getElementById(`option-${key}`);
+      if (selectEl) {
+        optionText = ` (${selectEl.value})`;
+      }
+
+      const cartItemKey = item.firebaseKey + (optionText ? `_${optionText}` : "");
+      const displayName = item.nama + optionText;
+
+      const existing = cart.find(i => i.cartKey === cartItemKey);
       if (existing) {
         existing.qty++;
       } else {
-        cart.push({ ...item, qty: 1 });
+        cart.push({ ...item, cartKey: cartItemKey, displayName: displayName, qty: 1 });
       }
       updateCartDisplay();
     };
 
-    window.ubahQty = function(key, delta) {
-      const index = cart.findIndex(i => i.firebaseKey === key);
+    window.ubahQty = function(cartKey, delta) {
+      const index = cart.findIndex(i => i.cartKey === cartKey);
       if (index !== -1) {
         cart[index].qty += delta;
         if (cart[index].qty <= 0) cart.splice(index, 1);
@@ -792,13 +817,13 @@
       container.innerHTML = cart.map(item => `
         <div class="cart-item">
           <div>
-            <div><strong>${item.nama}</strong></div>
+            <div><strong>${item.displayName}</strong></div>
             <small>Rp ${item.harga.toLocaleString('id-ID')}</small>
           </div>
           <div>
-            <button class="qty-btn" onclick="ubahQty('${item.firebaseKey}', -1)">-</button>
+            <button class="qty-btn" onclick="ubahQty('${item.cartKey}', -1)">-</button>
             <span style="margin: 0 5px;">${item.qty}</span>
-            <button class="qty-btn" onclick="ubahQty('${item.firebaseKey}', 1)">+</button>
+            <button class="qty-btn" onclick="ubahQty('${item.cartKey}', 1)">+</button>
           </div>
         </div>
       `).join('');
@@ -818,7 +843,7 @@
       const nextNumber = todayOrders.length + 1;
       const antrianKode = `PJ-${String(nextNumber).padStart(3, '0')}`;
       const total = cart.reduce((sum, item) => sum + (item.harga * item.qty), 0);
-      const rincian = cart.map(i => `${i.nama} (${i.qty}x)`).join(', ');
+      const rincian = cart.map(i => `${i.displayName} (${i.qty}x)`).join(', ');
       
       const now = new Date();
       const timeStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) + 
@@ -845,7 +870,6 @@
       });
     };
 
-    // --- KASIR & PEMBAYARAN ---
     function renderKasirView() {
       const listContainer = document.getElementById("kasir-queue-list");
       if (!listContainer) return;
@@ -952,7 +976,6 @@
       });
     };
 
-    // --- CETAK & KIRIM STRUK ---
     window.bukaStrukTerkini = function() {
       if (!activeQueueFirebaseKey) {
         alert("Pilih antrian terlebih dahulu!");
@@ -1035,7 +1058,6 @@ Selamat Menikmati Hidangan Anda`;
       document.getElementById("modal-struk").style.display = "none";
     };
 
-    // --- ADMIN ---
     window.hapusSemuaTransaksi = function() {
       if (confirm("Apakah Anda yakin ingin menghapus SELURUH data transaksi? Action ini tidak bisa dibatalkan.")) {
         remove(ordersRef).then(() => {
@@ -1173,7 +1195,6 @@ Selamat Menikmati Hidangan Anda`;
       document.body.removeChild(link);
     };
 
-    // --- DISPLAY VIEW ---
     function renderDisplayView() {
       const displayList = document.getElementById("display-queue-list");
       if (!displayList) return;
@@ -1217,7 +1238,6 @@ Selamat Menikmati Hidangan Anda`;
       `).join('');
     }
 
-    // Navigation Switcher
     window.switchRole = function(role) {
       document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
       document.querySelectorAll('.view-container').forEach(view => view.classList.remove('active'));
