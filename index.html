@@ -34,7 +34,7 @@
       z-index: 100;
     }
     nav h1 { font-size: 1.4rem; }
-    .role-switcher { display: flex; gap: 8px; flex-wrap: wrap; }
+    .role-switcher { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
     .role-btn {
       background: rgba(255, 255, 255, 0.2);
       color: white;
@@ -47,6 +47,8 @@
       transition: all 0.2s;
     }
     .role-btn.active { background: white; color: var(--primary); border-color: white; }
+    .btn-logout { background: #dc2626; border-color: #dc2626; color: white; }
+    .btn-logout:hover { background: #b91c1c; }
 
     .main-content { max-width: 1100px; margin: 20px auto; padding: 0 15px; }
 
@@ -79,6 +81,19 @@
 
     .view-container { display: none; }
     .view-container.active { display: block; }
+
+    /* LAYOUT LOGIN */
+    .login-box {
+      max-width: 400px;
+      margin: 60px auto;
+      text-align: center;
+    }
+    .login-box h2 { margin-bottom: 10px; color: var(--primary); }
+    .login-box .form-control {
+      width: 100%;
+      margin-bottom: 12px;
+      padding: 10px;
+    }
 
     .menu-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
     .filter-container { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
@@ -220,12 +235,7 @@
     @media print {
       body * { visibility: hidden; }
       #printable-receipt, #printable-receipt * { visibility: visible; }
-      #printable-receipt {
-        position: absolute;
-        left: 0;
-        top: 0;
-        width: 100%;
-      }
+      #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; }
       .modal-overlay { background: transparent; }
       .no-print { display: none !important; }
     }
@@ -240,21 +250,40 @@
 
   <nav>
     <h1>Panggon Njajan System</h1>
-    <div class="role-switcher">
-      <button class="role-btn active" onclick="switchRole('pemesanan')">📱 Antrian (Pelanggan)</button>
-      <button class="role-btn" onclick="switchRole('kasir')">📢 Kasir</button>
-      <button class="role-btn" onclick="switchRole('admin')">📊 Admin (Kelola Menu & Laporan)</button>
-      <button class="role-btn" onclick="switchRole('display')">📺 Display Antrian</button>
+    <div class="role-switcher" id="nav-role-switcher" style="display: none;">
+      <button class="role-btn active" id="btn-nav-pemesanan" onclick="switchRole('pemesanan')">📱 Antrian (Pelanggan)</button>
+      <button class="role-btn" id="btn-nav-kasir" onclick="switchRole('kasir')">📢 Kasir</button>
+      <button class="role-btn" id="btn-nav-admin" onclick="switchRole('admin')">📊 Admin</button>
+      <button class="role-btn" id="btn-nav-display" onclick="switchRole('display')">📺 Display</button>
+      <button class="role-btn btn-logout" id="btn-nav-logout" onclick="logout()">🔒 Logout Staff</button>
     </div>
   </nav>
 
   <div class="main-content">
 
+    <!-- VIEW 0: LOGIN STAFF -->
+    <div id="view-login" class="view-container">
+      <div class="card login-box">
+        <h2>Akses Staff System</h2>
+        <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 20px;">Silakan masukkan Username & Password akses Anda.</p>
+        
+        <form onsubmit="handleLogin(event)">
+          <input type="text" id="login-username" class="form-control" placeholder="Username" required>
+          <input type="password" id="login-password" class="form-control" placeholder="Password" required>
+          <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">Masuk / Login</button>
+        </form>
+        <button class="btn btn-sm" style="background:#6b7280; width: 100%; margin-top: 12px;" onclick="kembaliKePelanggan()">← Kembali ke Tampilan Pelanggan</button>
+      </div>
+    </div>
+
     <!-- VIEW 1: PEMESANAN (PELANGGAN) -->
     <div id="view-pemesanan" class="view-container active">
-      <div style="margin-bottom: 15px;">
-        <h2>Self-Service Order - Panggon Njajan</h2>
-        <p style="color: #6b7280;">Pilih menu kesukaanmu dan masukkan nama pemesan.</p>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h2>Self-Service Order - Panggon Njajan</h2>
+          <p style="color: #6b7280;">Pilih menu kesukaanmu dan masukkan nama pemesan.</p>
+        </div>
+        <button class="btn btn-sm" id="btn-staff-login-trigger" style="background: #4b5563;" onclick="showView('view-login')">🔑 Login Staff</button>
       </div>
 
       <div class="menu-layout">
@@ -334,7 +363,22 @@
     <div id="view-admin" class="view-container">
       <div style="margin-bottom: 15px;">
         <h2>Dashboard Admin</h2>
-        <p style="color: #6b7280;">Kelola menu resto dan pantau data transaksi realtime.</p>
+        <p style="color: #6b7280;">Kelola menu resto, pengguna & password, serta pantau data transaksi realtime.</p>
+      </div>
+
+      <!-- KELOLA USER & PASSWORD STAFF -->
+      <div class="card">
+        <h3>🔑 Kelola Akun Staff & Ganti Password</h3>
+        <br>
+        <div class="form-group">
+          <select id="admin-select-role" class="form-control" style="max-width: 200px;">
+            <option value="kasir">Kasir (kasir)</option>
+            <option value="admin">Admin (admin)</option>
+            <option value="display">Display (display)</option>
+          </select>
+          <input type="password" id="admin-new-password" class="form-control" placeholder="Masukkan Password Baru">
+          <button class="btn btn-accent" onclick="gantiPasswordUser()">💾 Simpan Password Baru</button>
+        </div>
       </div>
 
       <div class="card">
@@ -518,6 +562,24 @@
     const ordersRef = ref(db, 'orders');
     const menusRef = ref(db, 'menus');
 
+    // INITIAL AKUN STAFF
+    const defaultCredentials = {
+      "kasir": { pass: "kasir123", role: "kasir" },
+      "admin": { pass: "admin123", role: "admin" },
+      "display": { pass: "display123", role: "display" }
+    };
+
+    function getUserCredentials() {
+      const saved = localStorage.getItem("pj_user_credentials");
+      if (saved) {
+        return JSON.parse(saved);
+      }
+      localStorage.setItem("pj_user_credentials", JSON.stringify(defaultCredentials));
+      return defaultCredentials;
+    }
+
+    let userCredentials = getUserCredentials();
+
     let cart = [];
     let orderHistory = []; 
     let menuList = [];
@@ -527,6 +589,117 @@
     let selectedSpecificDate = null;
     let lastCalledKey = null;
     let activeStrukData = null;
+    let currentUserRole = 'pemesanan';
+
+    // LOGIN & AUTH LOGIC STAFF
+    window.handleLogin = function(e) {
+      e.preventDefault();
+      const u = document.getElementById("login-username").value.trim().toLowerCase();
+      const p = document.getElementById("login-password").value.trim();
+
+      userCredentials = getUserCredentials();
+
+      if (userCredentials[u] && userCredentials[u].pass === p) {
+        currentUserRole = userCredentials[u].role;
+        localStorage.setItem("pj_session_role", currentUserRole);
+        document.getElementById("login-username").value = "";
+        document.getElementById("login-password").value = "";
+        initAppAfterLogin();
+      } else {
+        alert("Username atau Password salah!");
+      }
+    };
+
+    window.logout = function() {
+      localStorage.removeItem("pj_session_role");
+      currentUserRole = 'pemesanan';
+      initAppAfterLogin();
+    };
+
+    window.kembaliKePelanggan = function() {
+      currentUserRole = 'pemesanan';
+      localStorage.setItem("pj_session_role", "pemesanan");
+      initAppAfterLogin();
+    };
+
+    function initAppAfterLogin() {
+      const savedRole = localStorage.getItem("pj_session_role");
+      
+      // Default ke pemesanan jika belum ada session
+      if (!savedRole) {
+        currentUserRole = 'pemesanan';
+        localStorage.setItem("pj_session_role", "pemesanan");
+      } else {
+        currentUserRole = savedRole;
+      }
+
+      const navSwitcher = document.getElementById("nav-role-switcher");
+      const btnStaffTrigger = document.getElementById("btn-staff-login-trigger");
+      const btnLogout = document.getElementById("btn-nav-logout");
+
+      if (currentUserRole === 'pemesanan') {
+        navSwitcher.style.display = "none";
+        if (btnStaffTrigger) btnStaffTrigger.style.display = "block";
+      } else {
+        navSwitcher.style.display = "flex";
+        if (btnStaffTrigger) btnStaffTrigger.style.display = "none";
+      }
+
+      document.getElementById("btn-nav-pemesanan").style.display = (currentUserRole === 'pemesanan' || currentUserRole === 'admin') ? 'block' : 'none';
+      document.getElementById("btn-nav-kasir").style.display = (currentUserRole === 'kasir' || currentUserRole === 'admin') ? 'block' : 'none';
+      document.getElementById("btn-nav-admin").style.display = (currentUserRole === 'admin') ? 'block' : 'none';
+      document.getElementById("btn-nav-display").style.display = (currentUserRole === 'display' || currentUserRole === 'admin') ? 'block' : 'none';
+
+      switchRole(currentUserRole);
+    }
+
+    window.showView = function(viewId) {
+      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
+      const target = document.getElementById(viewId);
+      if (target) target.classList.add('active');
+    };
+
+    window.switchRole = function(role) {
+      document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
+
+      if (role === 'pemesanan') {
+        document.getElementById('btn-nav-pemesanan').classList.add('active');
+        showView('view-pemesanan');
+        renderMenu();
+      } else if (role === 'kasir') {
+        document.getElementById('btn-nav-kasir').classList.add('active');
+        showView('view-kasir');
+        renderKasirView();
+      } else if (role === 'admin') {
+        document.getElementById('btn-nav-admin').classList.add('active');
+        showView('view-admin');
+        renderAdminView();
+        renderAdminMenuTable();
+      } else if (role === 'display') {
+        document.getElementById('btn-nav-display').classList.add('active');
+        showView('view-display');
+        renderDisplayView();
+      }
+    };
+
+    // FITUR GANTI PASSWORD (ADMIN)
+    window.gantiPasswordUser = function() {
+      const roleUsername = document.getElementById("admin-select-role").value;
+      const newPass = document.getElementById("admin-new-password").value.trim();
+
+      if (!newPass) {
+        alert("Masukkan password baru terlebih dahulu!");
+        return;
+      }
+
+      userCredentials = getUserCredentials();
+      if (userCredentials[roleUsername]) {
+        userCredentials[roleUsername].pass = newPass;
+        localStorage.setItem("pj_user_credentials", JSON.stringify(userCredentials));
+        alert(`Password untuk akun '${roleUsername}' berhasil diperbarui!`);
+        document.getElementById("admin-new-password").value = "";
+      }
+    };
 
     window.playTingTong = function() {
       try {
@@ -1238,28 +1411,7 @@ Selamat Menikmati Hidangan Anda`;
       `).join('');
     }
 
-    window.switchRole = function(role) {
-      document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
-      document.querySelectorAll('.view-container').forEach(view => view.classList.remove('active'));
-
-      if (role === 'pemesanan') {
-        document.querySelectorAll('.role-btn')[0].classList.add('active');
-        document.getElementById('view-pemesanan').classList.add('active');
-      } else if (role === 'kasir') {
-        document.querySelectorAll('.role-btn')[1].classList.add('active');
-        document.getElementById('view-kasir').classList.add('active');
-        renderKasirView();
-      } else if (role === 'admin') {
-        document.querySelectorAll('.role-btn')[2].classList.add('active');
-        document.getElementById('view-admin').classList.add('active');
-        renderAdminView();
-        renderAdminMenuTable();
-      } else if (role === 'display') {
-        document.querySelectorAll('.role-btn')[3].classList.add('active');
-        document.getElementById('view-display').classList.add('active');
-        renderDisplayView();
-      }
-    };
+    initAppAfterLogin();
   </script>
 </body>
 </html>
