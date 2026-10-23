@@ -3,1380 +3,159 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panggon Njajan - MongoDB Atlas System</title>
+  <title>Panggon Njajan - Kasir & POS</title>
+  <!-- Supabase JS Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    :root {
-      --primary: #e11d48;
-      --primary-hover: #be123c;
-      --bg: #fff1f2;
-      --card-bg: #ffffff;
-      --text: #1f2937;
-      --accent: #d97706;
-      --accent-hover: #b45309;
-      --success: #059669;
-      --success-hover: #047857;
-      --info: #0284c7;
-    }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    body { background-color: var(--bg); color: var(--text); padding-bottom: 40px; }
-
-    nav {
-      background: var(--primary);
-      color: white;
-      padding: 12px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-      position: sticky;
-      top: 0;
-      z-index: 100;
-    }
-    nav h1 { font-size: 1.4rem; }
-    .role-switcher { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .role-btn {
-      background: rgba(255, 255, 255, 0.2);
-      color: white;
-      border: 1px solid rgba(255, 255, 255, 0.4);
-      padding: 6px 14px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-weight: 600;
-      font-size: 0.85rem;
-      transition: all 0.2s;
-    }
-    .role-btn.active { background: white; color: var(--primary); border-color: white; }
-    .btn-logout { background: #dc2626; border-color: #dc2626; color: white; }
-    .btn-logout:hover { background: #b91c1c; }
-
-    .main-content { max-width: 1100px; margin: 20px auto; padding: 0 15px; }
-
-    .card { 
-      background: var(--card-bg); 
-      padding: 20px; 
-      border-radius: 12px; 
-      box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); 
-      border: 1px solid #ffe4e6; 
-      margin-bottom: 20px;
-    }
-
-    .btn { 
-      background: var(--primary); 
-      color: white; 
-      border: none; 
-      padding: 10px 16px; 
-      border-radius: 8px; 
-      cursor: pointer; 
-      font-weight: 600; 
-      transition: background 0.2s;
-    }
-    .btn:hover { background: var(--primary-hover); }
-    .btn-accent { background: var(--accent); }
-    .btn-accent:hover { background: var(--accent-hover); }
-    .btn-success { background: var(--success); }
-    .btn-success:hover { background: var(--success-hover); }
-    .btn-info { background: var(--info); }
-    .btn-sm { padding: 4px 10px; font-size: 0.8rem; border-radius: 6px; }
-
-    .view-container { display: none; }
-    .view-container.active { display: block; }
-
-    .login-box {
-      max-width: 400px;
-      margin: 60px auto;
-      text-align: center;
-    }
-    .login-box h2 { margin-bottom: 10px; color: var(--primary); }
-    .login-box .form-control {
-      width: 100%;
-      margin-bottom: 12px;
-      padding: 10px;
-    }
-
-    .menu-layout { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-    .filter-container { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-    .btn-filter {
-      background: #ffe4e6;
-      color: var(--primary);
-      border: none;
-      padding: 6px 14px;
-      border-radius: 20px;
-      cursor: pointer;
-      font-weight: 600;
-    }
-    .btn-filter.active { background: var(--primary); color: white; }
-
-    .menu-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; }
-    .menu-item-card {
-      background: white;
-      padding: 15px;
-      border-radius: 10px;
-      border: 1px solid #ffe4e6;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-    .menu-item-card h4 { font-size: 1rem; margin-bottom: 6px; }
-    .menu-item-card .price { color: var(--primary); font-weight: bold; margin-bottom: 10px; }
-
-    .option-select {
-      width: 100%;
-      padding: 6px;
-      margin-bottom: 10px;
-      border-radius: 6px;
-      border: 1px solid #cbd5e1;
-      font-size: 0.85rem;
-    }
-
-    .cart-item { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; font-size: 14px; border-bottom: 1px dashed #e5e7eb; padding-bottom: 8px; }
-    .qty-btn { background: #e5e7eb; border: none; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
-    .total { border-top: 2px solid #f3f4f6; padding-top: 12px; margin-top: 12px; font-weight: bold; font-size: 1.1rem; display: flex; justify-content: space-between; }
-
-    .kasir-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    .call-box { text-align: center; padding: 20px; }
-    .queue-big-num { font-size: 3.5rem; font-weight: bold; color: var(--primary); margin: 5px 0; }
-    .queue-name { font-size: 1.2rem; font-weight: 600; color: #4b5563; margin-bottom: 15px; }
-    
-    .pay-input-box {
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 15px;
-      text-align: left;
-    }
-    .pay-input-box label { font-size: 0.85rem; font-weight: bold; color: #475569; display: block; margin-bottom: 4px; }
-    .pay-input-box input {
-      width: 100%;
-      padding: 8px 12px;
-      font-size: 1.1rem;
-      font-weight: bold;
-      border: 1px solid #cbd5e1;
-      border-radius: 6px;
-      margin-bottom: 10px;
-    }
-    .change-display {
-      display: flex;
-      justify-content: space-between;
-      font-weight: bold;
-      font-size: 1.1rem;
-      color: var(--success);
-      padding-top: 5px;
-      border-top: 1px dashed #cbd5e1;
-    }
-
-    .queue-list { max-height: 400px; overflow-y: auto; }
-    .queue-card-item {
-      padding: 12px 15px;
-      border-radius: 8px;
-      border: 1px solid #e5e7eb;
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #fafafa;
-    }
-    .queue-card-item.dipanggil { background: #fef3c7; border-color: #f59e0b; }
-    .queue-card-item.selesai { background: #d1fae5; border-color: #10b981; }
-
-    table { width: 100%; border-collapse: collapse; margin-top: 15px; font-size: 0.9rem; }
-    th, td { border: 1px solid #e5e7eb; padding: 10px; text-align: left; }
-    th { background-color: #ffe4e6; color: var(--primary); }
-    tr:nth-child(even) { background-color: #f9fafb; }
-    
-    .badge { padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; }
-    .badge-pending { background: #fef3c7; color: #92400e; }
-    .badge-called { background: #dbeafe; color: #1e40af; }
-    .badge-paid { background: #d1fae5; color: #065f46; }
-
-    .stat-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
-    .stat-card { background: white; padding: 15px; border-radius: 10px; border: 1px solid #ffe4e6; text-align: center; }
-    .stat-card h3 { color: var(--primary); font-size: 1.6rem; margin-top: 5px; }
-
-    .form-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
-    .form-control { padding: 8px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 0.9rem; flex: 1; min-width: 150px; }
-
-    .display-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
-    .display-main-box { text-align: center; padding: 40px 20px; background: #fff; border: 3px solid var(--primary); border-radius: 16px; }
-    .display-big-num { font-size: 5.5rem; font-weight: 800; color: var(--primary); line-height: 1.1; margin: 15px 0; }
-    .display-sub-info { display: flex; justify-content: space-around; margin-top: 30px; border-top: 2px solid #f3f4f6; padding-top: 20px; }
-    .display-sub-card { text-align: center; }
-
-    .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-    }
-    .modal-content {
-      background: white;
-      padding: 20px;
-      border-radius: 8px;
-      width: 320px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    }
-    .receipt {
-      font-family: 'Courier New', Courier, monospace;
-      font-size: 13px;
-      line-height: 1.4;
-      color: #000;
-    }
-    .receipt-header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 8px; margin-bottom: 8px; }
-    .receipt-header h2 { font-size: 16px; font-weight: bold; margin-bottom: 2px; }
-    .receipt-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
-    .receipt-divider { border-top: 1px dashed #000; margin: 8px 0; }
-    .receipt-footer { text-align: center; margin-top: 10px; font-size: 11px; }
-
-    @media print {
-      body * { visibility: hidden; }
-      #printable-receipt, #printable-receipt * { visibility: visible; }
-      #printable-receipt { position: absolute; left: 0; top: 0; width: 100%; }
-      .modal-overlay { background: transparent; }
-      .no-print { display: none !important; }
-    }
-
-    @media (max-width: 768px) {
-      .menu-layout, .kasir-grid, .stat-cards, .display-grid { grid-template-columns: 1fr; }
-      nav { flex-direction: column; gap: 10px; text-align: center; }
-    }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f4f4f9; }
+    h1, h2 { color: #333; }
+    .container { display: flex; gap: 20px; flex-wrap: wrap; }
+    .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); flex: 1; min-width: 300px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #007bff; color: white; }
+    button { background-color: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; }
+    button:hover { background-color: #218838; }
+    .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+    .badge-pending { background-color: #ffc107; color: #000; }
+    .badge-done { background-color: #28a745; color: #fff; }
   </style>
 </head>
 <body>
 
-  <nav>
-    <h1>Panggon Njajan System</h1>
-    <div class="role-switcher" id="nav-role-switcher" style="display: none;">
-      <button class="role-btn active" id="btn-nav-pemesanan" onclick="switchRole('pemesanan')">📱 Antrian (Pelanggan)</button>
-      <button class="role-btn" id="btn-nav-kasir" onclick="switchRole('kasir')">📢 Kasir</button>
-      <button class="role-btn" id="btn-nav-admin" onclick="switchRole('admin')">📊 Admin</button>
-      <button class="role-btn" id="btn-nav-display" onclick="switchRole('display')">📺 Display</button>
-      <button class="role-btn btn-logout" id="btn-nav-logout" onclick="logout()">🔒 Logout Staff</button>
-    </div>
-  </nav>
+  <h1>Panggon Njajan POS</h1>
 
-  <div class="main-content">
-
-    <!-- VIEW 0: LOGIN STAFF -->
-    <div id="view-login" class="view-container">
-      <div class="card login-box">
-        <h2>Akses Staff System</h2>
-        <p style="color: #6b7280; font-size: 0.9rem; margin-bottom: 20px;">Silakan masukkan Username & Password akses Anda.</p>
-        
-        <form onsubmit="handleLogin(event)">
-          <input type="text" id="login-username" class="form-control" placeholder="Username" required>
-          <input type="password" id="login-password" class="form-control" placeholder="Password" required>
-          <button type="submit" class="btn" style="width: 100%; margin-top: 10px;">Masuk / Login</button>
-        </form>
-        <button class="btn btn-sm" style="background:#6b7280; width: 100%; margin-top: 12px;" onclick="kembaliKePelanggan()">← Kembali ke Tampilan Pelanggan</button>
-      </div>
+  <div class="container">
+    <!-- Kolom Menu -->
+    <div class="card">
+      <h2>Daftar Menu</h2>
+      <table id="menuTable">
+        <thead>
+          <tr>
+            <th>Nama Menu</th>
+            <th>Kategori</th>
+            <th>Harga</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="3">Memuat data menu...</td></tr>
+        </tbody>
+      </table>
     </div>
 
-    <!-- VIEW 1: PEMESANAN (PELANGGAN) -->
-    <div id="view-pemesanan" class="view-container active">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-        <div>
-          <h2>Self-Service Order - Panggon Njajan</h2>
-          <p style="color: #6b7280;">Pilih menu kesukaanmu dan masukkan nama pemesan.</p>
-        </div>
-        <button class="btn btn-sm" id="btn-staff-login-trigger" style="background: #4b5563;" onclick="showView('view-login')">🔑 Login Staff</button>
-      </div>
-
-      <div class="menu-layout">
-        <div>
-          <div class="filter-container">
-            <button class="btn-filter active" onclick="filterMenu('semua')">Semua</button>
-            <button class="btn-filter" onclick="filterMenu('Minuman')">Minuman</button>
-            <button class="btn-filter" onclick="filterMenu('Makanan')">Makanan</button>
-          </div>
-          <div class="menu-grid" id="menu-container"></div>
-        </div>
-
-        <div class="card">
-          <h3>Detail Pesanan</h3>
-          <br>
-          <div style="margin-bottom: 15px;">
-            <label style="font-size: 0.9rem; font-weight: 600;">Nama Pemesan *</label>
-            <input type="text" id="customer-name" style="width:100%; padding: 8px; margin-top:5px; border-radius:6px; border:1px solid #cbd5e1;" placeholder="Nama Anda...">
-          </div>
-
-          <div id="cart-items">Belum ada menu yang dipilih.</div>
-          
-          <div class="total">
-            <span>Total:</span>
-            <span id="cart-total">Rp 0</span>
-          </div>
-          <br>
-          <button class="btn" style="width: 100%; font-size: 1rem;" onclick="buatPesanan()">Ambil Nomor Antrian</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- VIEW 2: KASIR -->
-    <div id="view-kasir" class="view-container">
-      <div style="margin-bottom: 15px;">
-        <h2>Kasir & Pemanggilan Antrian</h2>
-        <p style="color: #6b7280;">Kelola panggilan antrian dan pembayaran pesanan pelanggan secara realtime (Hari Ini).</p>
-      </div>
-
-      <div class="kasir-grid">
-        <div class="card call-box">
-          <h3>Antrian Dipanggil</h3>
-          <div class="queue-big-num" id="kasir-current-num">--</div>
-          <div class="queue-name" id="kasir-current-name">Atas Nama: -</div>
-
-          <div class="pay-input-box">
-            <div class="receipt-row" style="margin-bottom:8px; font-weight:bold;">
-              <span>Total Tagihan:</span>
-              <span id="kasir-total-tagihan" style="color:var(--primary);">Rp 0</span>
-            </div>
-            <label for="kasir-input-bayar">Nominal Bayar (Rp):</label>
-            <input type="number" id="kasir-input-bayar" placeholder="0" oninput="hitungKembalian()">
-            <div class="change-display">
-              <span>Kembalian:</span>
-              <span id="kasir-kembalian">Rp 0</span>
-            </div>
-          </div>
-
-          <div style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-            <button class="btn btn-accent" style="font-size: 0.9rem;" onclick="panggilBerikutnya()">📢 Panggil Selanjutnya</button>
-            <button class="btn btn-success" style="font-size: 0.9rem;" onclick="prosesPembayaran()">💵 Konfirmasi Lunas</button>
-            <button class="btn btn-info" style="font-size: 0.9rem;" onclick="bukaStrukTerkini()">🖨️ Cetak Struk</button>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>Daftar Antrian Aktif Hari Ini</h3>
-          <br>
-          <div class="queue-list" id="kasir-queue-list">
-            <p style="color: #9ca3af; text-align: center;">Mengambil data dari server...</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- VIEW 3: ADMIN -->
-    <div id="view-admin" class="view-container">
-      <div style="margin-bottom: 15px;">
-        <h2>Dashboard Admin</h2>
-        <p style="color: #6b7280;">Kelola menu resto, pengguna & password, serta pantau data transaksi.</p>
-      </div>
-
-      <!-- KELOLA USER & PASSWORD STAFF -->
-      <div class="card">
-        <h3>🔑 Kelola Akun Staff & Ganti Password</h3>
-        <br>
-        <div class="form-group">
-          <select id="admin-select-role" class="form-control" style="max-width: 200px;">
-            <option value="kasir">Kasir (kasir)</option>
-            <option value="admin">Admin (admin)</option>
-            <option value="display">Display (display)</option>
-          </select>
-          <input type="password" id="admin-new-password" class="form-control" placeholder="Masukkan Password Baru">
-          <button class="btn btn-accent" onclick="gantiPasswordUser()">💾 Simpan Password Baru</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <h3>🍔 Kelola Menu Resto (Tambah & Edit)</h3>
-        <br>
-        <div class="form-group">
-          <input type="text" id="admin-menu-nama" class="form-control" placeholder="Nama Menu (misal: Es Teh)">
-          <input type="number" id="admin-menu-harga" class="form-control" placeholder="Harga (misal: 5000)">
-          <select id="admin-menu-kategori" class="form-control">
-            <option value="Minuman">Minuman</option>
-            <option value="Makanan">Makanan</option>
-          </select>
-          <button class="btn btn-success" onclick="tambahMenu()">+ Tambah Menu Baru</button>
-        </div>
-
-        <div style="overflow-x: auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Nama Menu</th>
-                <th>Kategori</th>
-                <th>Harga (Rp)</th>
-                <th style="width: 160px;">Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="admin-menu-table-body">
-              <tr><td colspan="4" style="text-align: center; color: #9ca3af;">Memuat daftar menu...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="stat-cards">
-        <div class="stat-card">
-          <span>Total Pesanan</span>
-          <h3 id="stat-total-order">0</h3>
-        </div>
-        <div class="stat-card">
-          <span>Total Antrian Selesai</span>
-          <h3 id="stat-completed-order" style="color: var(--success);">0</h3>
-        </div>
-        <div class="stat-card">
-          <span>Total Omset (Lunas)</span>
-          <h3 id="stat-total-revenue" style="color: var(--accent);">Rp 0</h3>
-        </div>
-      </div>
-
-      <div class="card">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
-          <h3>Riwayat Transaksi Lengkap</h3>
-          <div>
-            <button class="btn" style="background:#dc2626;" onclick="hapusSemuaTransaksi()">🗑️ Bersihkan Data Transaksi</button>
-            <button class="btn btn-success" onclick="downloadCSV()">📥 Download Laporan (CSV)</button>
-          </div>
-        </div>
-
-        <div class="filter-container" style="margin-bottom: 15px; align-items: center;">
-          <button class="btn-filter btn-report-filter active" onclick="setReportFilter('semua')">Semua Transaksi</button>
-          <button class="btn-filter btn-report-filter" onclick="setReportFilter('hari_ini')">Hari Ini</button>
-          <button class="btn-filter btn-report-filter" onclick="setReportFilter('mingguan')">7 Hari Terakhir</button>
-          <button class="btn-filter btn-report-filter" onclick="setReportFilter('bulanan')">Bulan Ini</button>
-          
-          <div style="display: flex; align-items: center; gap: 5px; margin-left: auto;">
-            <label style="font-size: 0.85rem; font-weight: 600; color: #4b5563;">Pilih Tanggal:</label>
-            <input type="date" id="report-date-picker" onchange="filterBySpecificDate()" style="padding: 5px 8px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 0.85rem;">
-          </div>
-        </div>
-        
-        <div style="overflow-x: auto;">
-          <table>
-            <thead>
-              <tr>
-                <th>Tanggal & Waktu</th>
-                <th>No. Antrian</th>
-                <th>Nama Pemesan</th>
-                <th>Rincian Pesanan</th>
-                <th>Total (Rp)</th>
-                <th>Bayar (Rp)</th>
-                <th>Kembali (Rp)</th>
-                <th>Status Pembayaran</th>
-                <th>Aksi</th>
-              </tr>
-            </thead>
-            <tbody id="admin-table-body">
-              <tr><td colspan="9" style="text-align: center; color: #9ca3af;">Memuat data dari server...</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- VIEW 4: DISPLAY -->
-    <div id="view-display" class="view-container">
-      <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
-        <div>
-          <h2>Display Antrian Pelanggan</h2>
-          <p style="color: #6b7280;">Layar monitor informasi antrian untuk ruang tunggu (Hari Ini).</p>
-        </div>
-        <button class="btn btn-accent btn-sm" onclick="panggilSuara('PJ-001')">📢 Tes Suara Pemanggilan</button>
-      </div>
-
-      <div class="display-grid">
-        <div class="display-main-box card">
-          <h3 style="color: #6b7280; font-size: 1.2rem;">NOMOR ANTRIAN DIPANGGIL</h3>
-          <div class="display-big-num" id="display-current-num">--</div>
-          <div style="font-size: 1.8rem; font-weight: bold; color: #374151;" id="display-current-name">Menunggu Panggilan...</div>
-          
-          <div class="display-sub-info">
-            <div class="display-sub-card">
-              <span style="color: #6b7280; font-size: 0.9rem;">Total Antrian Hari Ini</span>
-              <h4 id="display-total-assigned">PJ-000</h4>
-            </div>
-            <div class="display-sub-card">
-              <span style="color: #6b7280; font-size: 0.9rem;">Sisa Antrian Menunggu</span>
-              <h4 id="display-waiting-count" style="color: var(--primary);">0 Orang</h4>
-            </div>
-          </div>
-        </div>
-
-        <div class="card">
-          <h3>Daftar Panggilan Hari Ini</h3>
-          <br>
-          <div class="queue-list" id="display-queue-list">
-            <p style="color: #9ca3af; text-align: center;">Memuat data dari server...</p>
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </div>
-
-  <!-- MODAL STRUK -->
-  <div class="modal-overlay" id="modal-struk">
-    <div class="modal-content">
-      <div id="printable-receipt" class="receipt">
-        <div class="receipt-header">
-          <h2>PANGGON NJAJAN</h2>
-          <div>Bhummi Jati Permai LL 04 Jatirembe Gresik</div>
-          <div>Telp: 085100000066</div>
-        </div>
-        <div class="receipt-row"><span>Tgl:</span><span id="struk-waktu">-</span></div>
-        <div class="receipt-row"><span>No. Antrian:</span><strong id="struk-no">-</strong></div>
-        <div class="receipt-row"><span>Pelanggan:</span><span id="struk-nama">-</span></div>
-        <div class="receipt-divider"></div>
-        <div id="struk-items"></div>
-        <div class="receipt-divider"></div>
-        <div class="receipt-row"><span>Total Tagihan:</span><strong id="struk-total">Rp 0</strong></div>
-        <div class="receipt-row"><span>Bayar:</span><span id="struk-bayar">Rp 0</span></div>
-        <div class="receipt-row"><span>Kembalian:</span><span id="struk-kembali">Rp 0</span></div>
-        <div class="receipt-divider"></div>
-        <div class="receipt-footer">
-          *** TERIMA KASIH ***<br>
-          Selamat Menikmati Hidangan Anda
-        </div>
-      </div>
-      <div style="margin-top: 15px; display: flex; gap: 6px; flex-wrap: wrap;" class="no-print">
-        <button class="btn btn-success" style="flex: 1;" onclick="window.print()">🖨️ Cetak</button>
-        <button class="btn" style="background:#25D366;" onclick="kirimStrukWA()">📱 Kirim WA</button>
-        <button class="btn" style="background:#6b7280;" onclick="tutupStruk()">Tutup</button>
-      </div>
+    <!-- Kolom Antrian Pesanan -->
+    <div class="card">
+      <h2>Daftar Pesanan / Antrian</h2>
+      <table id="orderTable">
+        <thead>
+          <tr>
+            <th>No. Antrian</th>
+            <th>Nama</th>
+            <th>Rincian</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td colspan="6">Memuat data pesanan...</td></tr>
+        </tbody>
+      </table>
     </div>
   </div>
 
   <script>
-    const API_URL = "http://localhost:5000/api";
+    // 1. Konfigurasi Supabase
+    const SUPABASE_URL = "https://jcveykcphpfbsbcirmbv.supabase.co";
+    // TEMPEL PUBLISHABLE KEY ANDA DI BAWAH INI
+    const SUPABASE_KEY = "PASTE_PUBLISHABLE_KEY_ANDA_DI_SINI"; 
 
-    // INITIAL AKUN STAFF
-    const defaultCredentials = {
-      "kasir": { pass: "kasir123", role: "kasir" },
-      "admin": { pass: "admin123", role: "admin" },
-      "display": { pass: "display123", role: "display" }
-    };
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    function getUserCredentials() {
-      const saved = localStorage.getItem("pj_user_credentials");
-      if (saved) {
-        return JSON.parse(saved);
-      }
-      localStorage.setItem("pj_user_credentials", JSON.stringify(defaultCredentials));
-      return defaultCredentials;
-    }
+    // 2. Fungsi Mengambil Data Menu dari Supabase
+    async function loadMenus() {
+      const { data, error } = await supabaseClient
+        .from('menus')
+        .select('*');
 
-    let userCredentials = getUserCredentials();
-
-    let cart = [];
-    let orderHistory = []; 
-    let menuList = [];
-    let activeQueueId = null;
-    let activeFilter = 'semua';
-    let currentReportFilter = 'semua';
-    let selectedSpecificDate = null;
-    let lastCalledId = null;
-    let activeStrukData = null;
-    let currentUserRole = 'pemesanan';
-
-    // FETCH DATA DARI SERVER
-    async function fetchMenus() {
-      try {
-        const res = await fetch(`${API_URL}/menus`);
-        menuList = await res.json();
-        renderMenu();
-        renderAdminMenuTable();
-      } catch (err) {
-        console.error("Gagal mengambil data menu:", err);
-      }
-    }
-
-    async function fetchOrders() {
-      try {
-        const res = await fetch(`${API_URL}/orders`);
-        orderHistory = await res.json();
-        renderKasirView();
-        renderAdminView();
-        renderDisplayView();
-      } catch (err) {
-        console.error("Gagal mengambil data orders:", err);
-      }
-    }
-
-    // Refresh data otomatis setiap 3 detik agar real-time
-    setInterval(() => {
-      fetchOrders();
-    }, 3000);
-
-    window.handleLogin = function(e) {
-      e.preventDefault();
-      const u = document.getElementById("login-username").value.trim().toLowerCase();
-      const p = document.getElementById("login-password").value.trim();
-
-      userCredentials = getUserCredentials();
-
-      if (userCredentials[u] && userCredentials[u].pass === p) {
-        currentUserRole = userCredentials[u].role;
-        localStorage.setItem("pj_session_role", currentUserRole);
-        document.getElementById("login-username").value = "";
-        document.getElementById("login-password").value = "";
-        initAppAfterLogin();
-      } else {
-        alert("Username atau Password salah!");
-      }
-    };
-
-    window.logout = function() {
-      localStorage.removeItem("pj_session_role");
-      currentUserRole = 'pemesanan';
-      initAppAfterLogin();
-    };
-
-    window.kembaliKePelanggan = function() {
-      currentUserRole = 'pemesanan';
-      localStorage.setItem("pj_session_role", "pemesanan");
-      initAppAfterLogin();
-    };
-
-    function initAppAfterLogin() {
-      const savedRole = localStorage.getItem("pj_session_role");
-      if (!savedRole) {
-        currentUserRole = 'pemesanan';
-        localStorage.setItem("pj_session_role", "pemesanan");
-      } else {
-        currentUserRole = savedRole;
-      }
-
-      const navSwitcher = document.getElementById("nav-role-switcher");
-      const btnStaffTrigger = document.getElementById("btn-staff-login-trigger");
-
-      if (currentUserRole === 'pemesanan') {
-        navSwitcher.style.display = "none";
-        if (btnStaffTrigger) btnStaffTrigger.style.display = "block";
-      } else {
-        navSwitcher.style.display = "flex";
-        if (btnStaffTrigger) btnStaffTrigger.style.display = "none";
-      }
-
-      document.getElementById("btn-nav-pemesanan").style.display = (currentUserRole === 'pemesanan' || currentUserRole === 'admin') ? 'block' : 'none';
-      document.getElementById("btn-nav-kasir").style.display = (currentUserRole === 'kasir' || currentUserRole === 'admin') ? 'block' : 'none';
-      document.getElementById("btn-nav-admin").style.display = (currentUserRole === 'admin') ? 'block' : 'none';
-      document.getElementById("btn-nav-display").style.display = (currentUserRole === 'display' || currentUserRole === 'admin') ? 'block' : 'none';
-
-      switchRole(currentUserRole);
-    }
-
-    window.showView = function(viewId) {
-      document.querySelectorAll('.view-container').forEach(v => v.classList.remove('active'));
-      const target = document.getElementById(viewId);
-      if (target) target.classList.add('active');
-    };
-
-    window.switchRole = function(role) {
-      document.querySelectorAll('.role-btn').forEach(btn => btn.classList.remove('active'));
-
-      if (role === 'pemesanan') {
-        document.getElementById('btn-nav-pemesanan').classList.add('active');
-        showView('view-pemesanan');
-        renderMenu();
-      } else if (role === 'kasir') {
-        document.getElementById('btn-nav-kasir').classList.add('active');
-        showView('view-kasir');
-        renderKasirView();
-      } else if (role === 'admin') {
-        document.getElementById('btn-nav-admin').classList.add('active');
-        showView('view-admin');
-        renderAdminView();
-        renderAdminMenuTable();
-      } else if (role === 'display') {
-        document.getElementById('btn-nav-display').classList.add('active');
-        showView('view-display');
-        renderDisplayView();
-      }
-    };
-
-    window.gantiPasswordUser = function() {
-      const roleUsername = document.getElementById("admin-select-role").value;
-      const newPass = document.getElementById("admin-new-password").value.trim();
-
-      if (!newPass) {
-        alert("Masukkan password baru terlebih dahulu!");
+      const tbody = document.querySelector("#menuTable tbody");
+      if (error) {
+        console.error("Gagal mengambil menu:", error);
+        tbody.innerHTML = `<tr><td colspan="3" style="color:red;">Gagal memuat menu</td></tr>`;
         return;
       }
 
-      userCredentials = getUserCredentials();
-      if (userCredentials[roleUsername]) {
-        userCredentials[roleUsername].pass = newPass;
-        localStorage.setItem("pj_user_credentials", JSON.stringify(userCredentials));
-        alert(`Password untuk akun '${roleUsername}' berhasil diperbarui!`);
-        document.getElementById("admin-new-password").value = "";
-      }
-    };
-
-    window.playTingTong = function() {
-      try {
-        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc1 = audioCtx.createOscillator();
-        const gain1 = audioCtx.createGain();
-        osc1.type = 'sine';
-        osc1.frequency.setValueAtTime(659.25, audioCtx.currentTime);
-        gain1.gain.setValueAtTime(0.5, audioCtx.currentTime);
-        gain1.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.8);
-        osc1.connect(gain1);
-        gain1.connect(audioCtx.destination);
-        osc1.start(audioCtx.currentTime);
-        osc1.stop(audioCtx.currentTime + 0.8);
-
-        const osc2 = audioCtx.createOscillator();
-        const gain2 = audioCtx.createGain();
-        osc2.type = 'sine';
-        osc2.frequency.setValueAtTime(523.25, audioCtx.currentTime + 0.4);
-        gain2.gain.setValueAtTime(0.5, audioCtx.currentTime + 0.4);
-        gain2.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.4);
-        osc2.connect(gain2);
-        gain2.connect(audioCtx.destination);
-        osc2.start(audioCtx.currentTime + 0.4);
-        osc2.stop(audioCtx.currentTime + 1.4);
-      } catch (e) {
-        console.error("Audio error:", e);
-      }
-    };
-
-    window.panggilSuara = function(noAntrian) {
-      playTingTong();
-      if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const nomorEja = noAntrian.replace('-', ' ').split('').join(' ');
-        const teksUcap = `Nomor antrian, ${nomorEja}, silakan menuju kasir`;
-        const utterance = new SpeechSynthesisUtterance(teksUcap);
-        utterance.lang = 'id-ID';
-        utterance.rate = 0.88;
-        utterance.pitch = 1.0;
-        setTimeout(() => {
-          window.speechSynthesis.speak(utterance);
-        }, 1200);
-      }
-    };
-
-    function getOrderDateObj(order) {
-      if (order.timestamp && typeof order.timestamp === 'number') {
-        return new Date(order.timestamp);
-      }
-      return new Date(2000, 0, 1);
-    }
-
-    function isSameDay(d1, d2) {
-      return d1.getFullYear() === d2.getFullYear() &&
-             d1.getMonth() === d2.getMonth() &&
-             d1.getDate() === d2.getDate();
-    }
-
-    function getTodayOrders() {
-      const now = new Date();
-      return orderHistory.filter(order => {
-        const orderDate = getOrderDateObj(order);
-        return isSameDay(orderDate, now);
-      });
-    }
-
-    window.tambahMenu = async function() {
-      const nama = document.getElementById("admin-menu-nama").value.trim();
-      const harga = parseInt(document.getElementById("admin-menu-harga").value);
-      const kategori = document.getElementById("admin-menu-kategori").value;
-
-      if (!nama || isNaN(harga)) {
-        alert("Harap isi Nama Menu dan Harga dengan benar!");
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="3">Belum ada data menu.</td></tr>`;
         return;
       }
 
-      await fetch(`${API_URL}/menus`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nama, harga, kategori })
-      });
-
-      alert("Menu berhasil ditambahkan!");
-      document.getElementById("admin-menu-nama").value = "";
-      document.getElementById("admin-menu-harga").value = "";
-      fetchMenus();
-    };
-
-    window.editMenuPrompt = async function(id, namaLama, hargaLama) {
-      const namaBaru = prompt("Edit Nama Menu:", namaLama);
-      if (namaBaru === null) return;
-
-      const hargaBaruInput = prompt("Edit Harga Menu (Rp):", hargaLama);
-      if (hargaBaruInput === null) return;
-
-      const hargaBaru = parseInt(hargaBaruInput);
-      if (!namaBaru.trim() || isNaN(hargaBaru)) {
-        alert("Input nama atau harga tidak valid!");
-        return;
-      }
-
-      await fetch(`${API_URL}/menus/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nama: namaBaru.trim(), harga: hargaBaru })
-      });
-
-      alert("Menu berhasil di-update!");
-      fetchMenus();
-    };
-
-    window.hapusMenu = async function(id, nama) {
-      if (confirm(`Yakin ingin menghapus menu "${nama}"?`)) {
-        await fetch(`${API_URL}/menus/${id}`, { method: 'DELETE' });
-        fetchMenus();
-      }
-    };
-
-    function renderAdminMenuTable() {
-      const tbody = document.getElementById("admin-menu-table-body");
-      if (!tbody) return;
-      if (menuList.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #9ca3af;">Belum ada menu.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = menuList.map(m => `
+      tbody.innerHTML = data.map(item => `
         <tr>
-          <td><strong>${m.nama}</strong></td>
-          <td>${m.kategori}</td>
-          <td>Rp ${m.harga.toLocaleString('id-ID')}</td>
-          <td>
-            <button class="btn btn-accent btn-sm" onclick="editMenuPrompt('${m._id}', '${m.nama}', ${m.harga})">✏️ Edit</button>
-            <button class="btn btn-sm" style="background:#dc2626;" onclick="hapusMenu('${m._id}', '${m.nama}')">🗑️ Hapus</button>
-          </td>
+          <td><b>${item.nama}</b></td>
+          <td>${item.kategori || '-'}</td>
+          <td>Rp ${Number(item.harga).toLocaleString('id-ID')}</td>
         </tr>
       `).join('');
     }
 
-    window.renderMenu = function() {
-      const container = document.getElementById("menu-container");
-      if (!container) return;
-      const filtered = activeFilter === 'semua' ? menuList : menuList.filter(m => m.kategori === activeFilter);
-      
-      if (filtered.length === 0) {
-        container.innerHTML = `<p style="color:#9ca3af; grid-column: 1/-1;">Menu tidak ditemukan.</p>`;
+    // 3. Fungsi Mengambil Data Pesanan dari Supabase
+    async function loadOrders() {
+      const { data, error } = await supabaseClient
+        .from('orders')
+        .select('*')
+        .order('noSeq', { ascending: false });
+
+      const tbody = document.querySelector("#orderTable tbody");
+      if (error) {
+        console.error("Gagal mengambil orders:", error);
+        tbody.innerHTML = `<tr><td colspan="6" style="color:red;">Gagal memuat pesanan</td></tr>`;
         return;
       }
 
-      container.innerHTML = filtered.map(item => {
-        const isChilliOil = item.nama.toLowerCase().includes("chilli oil");
-        const isMie = item.kategori === "Makanan" && !isChilliOil;
+      if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6">Belum ada pesanan aktif.</td></tr>`;
+        return;
+      }
 
-        let optionsHtml = "";
-        if (isMie) {
-          optionsHtml = `
-            <select id="option-${item._id}" class="option-select">
-              <option value="Level 0 (Tidak Pedas)">Level 0 (Tidak Pedas)</option>
-              <option value="Level 1 (Agak Pedas)">Level 1 (Agak Pedas)</option>
-              <option value="Level 2 (Sedang)">Level 2 (Sedang)</option>
-              <option value="Level 3 (Pedas)">Level 3 (Pedas)</option>
-              <option value="Level 4 (Sangat Pedas)">Level 4 (Sangat Pedas)</option>
-              <option value="Level 5 (Ekstra Pedas)">Level 5 (Ekstra Pedas)</option>
-            </select>
-          `;
-        } else if (isChilliOil) {
-          optionsHtml = `
-            <select id="option-${item._id}" class="option-select">
-              <option value="Campur">Chilli Oil: Campur</option>
-              <option value="Pisah">Chilli Oil: Pisah</option>
-            </select>
-          `;
-        }
-
+      tbody.innerHTML = data.map(item => {
+        const isDone = item.status === 'Selesai';
+        const badgeClass = isDone ? 'badge-done' : 'badge-pending';
+        
         return `
-          <div class="menu-item-card">
-            <div>
-              <h4>${item.nama}</h4>
-              <div class="price">Rp ${item.harga.toLocaleString('id-ID')}</div>
-              ${optionsHtml}
-            </div>
-            <button class="btn" onclick="tambahKeKeranjang('${item._id}')">+ Tambah</button>
-          </div>
+          <tr>
+            <td><b>${item.noAntrian || item.noSeq}</b></td>
+            <td>${item.nama || '-'}</td>
+            <td>${item.rincian || '-'}</td>
+            <td>Rp ${Number(item.total || 0).toLocaleString('id-ID')}</td>
+            <td><span class="badge ${badgeClass}">${item.status || 'Proses'}</span></td>
+            <td>
+              ${!isDone ? `<button onclick="updateOrderStatus(${item.noSeq}, 'Selesai')">Selesai</button>` : '-'}
+            </td>
+          </tr>
         `;
       }).join('');
-    };
+    }
 
-    window.filterMenu = function(kategori) {
-      activeFilter = kategori;
-      document.querySelectorAll('#view-pemesanan .btn-filter').forEach(btn => {
-        btn.classList.toggle('active', btn.innerText.toLowerCase() === kategori.toLowerCase() || (kategori === 'semua' && btn.innerText === 'Semua'));
-      });
-      renderMenu();
-    };
+    // 4. Fungsi Mengubah Status Pesanan di Supabase
+    async function updateOrderStatus(noSeq, statusBaru) {
+      const { error } = await supabaseClient
+        .from('orders')
+        .update({ status: statusBaru })
+        .eq('noSeq', noSeq);
 
-    window.tambahKeKeranjang = function(id) {
-      const item = menuList.find(m => m._id === id);
-      if (!item) return;
-
-      let optionText = "";
-      const selectEl = document.getElementById(`option-${id}`);
-      if (selectEl) {
-        optionText = ` (${selectEl.value})`;
-      }
-
-      const cartItemKey = item._id + (optionText ? `_${optionText}` : "");
-      const displayName = item.nama + optionText;
-
-      const existing = cart.find(i => i.cartKey === cartItemKey);
-      if (existing) {
-        existing.qty++;
+      if (error) {
+        alert("Gagal memperbarui status pesanan: " + error.message);
       } else {
-        cart.push({ ...item, cartKey: cartItemKey, displayName: displayName, qty: 1 });
+        loadOrders(); // Refresh antrian
       }
-      updateCartDisplay();
-    };
-
-    window.ubahQty = function(cartKey, delta) {
-      const index = cart.findIndex(i => i.cartKey === cartKey);
-      if (index !== -1) {
-        cart[index].qty += delta;
-        if (cart[index].qty <= 0) cart.splice(index, 1);
-      }
-      updateCartDisplay();
-    };
-
-    function updateCartDisplay() {
-      const container = document.getElementById("cart-items");
-      const totalContainer = document.getElementById("cart-total");
-
-      if (cart.length === 0) {
-        container.innerHTML = "Belum ada menu yang dipilih.";
-        totalContainer.innerText = "Rp 0";
-        return;
-      }
-
-      container.innerHTML = cart.map(item => `
-        <div class="cart-item">
-          <div>
-            <div><strong>${item.displayName}</strong></div>
-            <small>Rp ${item.harga.toLocaleString('id-ID')}</small>
-          </div>
-          <div>
-            <button class="qty-btn" onclick="ubahQty('${item.cartKey}', -1)">-</button>
-            <span style="margin: 0 5px;">${item.qty}</span>
-            <button class="qty-btn" onclick="ubahQty('${item.cartKey}', 1)">+</button>
-          </div>
-        </div>
-      `).join('');
-
-      const total = cart.reduce((sum, item) => sum + (item.harga * item.qty), 0);
-      totalContainer.innerText = `Rp ${total.toLocaleString('id-ID')}`;
     }
 
-    window.buatPesanan = async function() {
-      const nameInput = document.getElementById("customer-name");
-      const nama = nameInput.value.trim();
-
-      if (!nama) { alert("Isi Nama Pemesan terlebih dahulu!"); return; }
-      if (cart.length === 0) { alert("Pilih menu terlebih dahulu!"); return; }
-
-      const todayOrders = getTodayOrders();
-      const nextNumber = todayOrders.length + 1;
-      const antrianKode = `PJ-${String(nextNumber).padStart(3, '0')}`;
-      const total = cart.reduce((sum, item) => sum + (item.harga * item.qty), 0);
-      const rincian = cart.map(i => `${i.displayName} (${i.qty}x)`).join(', ');
-      
-      const now = new Date();
-      const timeStr = now.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' }) + 
-                      ', ' + 
-                      now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-
-      const newOrder = {
-        noSeq: nextNumber,
-        waktu: timeStr,
-        timestamp: now.getTime(),
-        noAntrian: antrianKode,
-        nama: nama,
-        rincian: rincian,
-        total: total,
-        bayar: 0,
-        kembalian: 0,
-        status: "Menunggu"
-      };
-
-      await fetch(`${API_URL}/orders`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(newOrder)
-      });
-
-      alert(`Pesanan Berhasil Disimpan!\nNomor Antrian: ${antrianKode}\nAtas Nama: ${nama}`);
-      cart = [];
-      nameInput.value = "";
-      updateCartDisplay();
-      fetchOrders();
-    };
-
-    function renderKasirView() {
-      const listContainer = document.getElementById("kasir-queue-list");
-      if (!listContainer) return;
-
-      const todayOrders = getTodayOrders();
-
-      if (todayOrders.length === 0) {
-        listContainer.innerHTML = `<p style="color: #9ca3af; text-align: center;">Belum ada antrian aktif hari ini.</p>`;
-        return;
-      }
-
-      listContainer.innerHTML = todayOrders.map(item => `
-        <div class="queue-card-item ${item.status === 'Dipanggil' ? 'dipanggil' : (item.status === 'Lunas' ? 'selesai' : '')}">
-          <div>
-            <strong>${item.noAntrian}</strong> - ${item.nama}
-            <div style="font-size: 0.8rem; color: #6b7280;">${item.rincian} (Rp ${item.total.toLocaleString('id-ID')})</div>
-          </div>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="btn btn-accent btn-sm" onclick="panggilSpesifik('${item._id}')">📢 Panggil</button>
-            <span class="badge ${item.status === 'Lunas' ? 'badge-paid' : (item.status === 'Dipanggil' ? 'badge-called' : 'badge-pending')}">
-              ${item.status}
-            </span>
-          </div>
-        </div>
-      `).join('');
-    }
-
-    window.panggilSpesifik = async function(id) {
-      const order = orderHistory.find(i => i._id === id);
-      if (!order) return;
-
-      activeQueueId = id;
-      await fetch(`${API_URL}/orders/${id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: "Dipanggil" })
-      });
-
-      document.getElementById("kasir-current-num").innerText = order.noAntrian;
-      document.getElementById("kasir-current-name").innerText = `Atas Nama: ${order.nama}`;
-      document.getElementById("kasir-total-tagihan").innerText = `Rp ${order.total.toLocaleString('id-ID')}`;
-      
-      const inputBayar = document.getElementById("kasir-input-bayar");
-      inputBayar.value = order.bayar > 0 ? order.bayar : "";
-      hitungKembalian();
-      fetchOrders();
-    };
-
-    window.panggilBerikutnya = function() {
-      const todayOrders = getTodayOrders();
-      const nextPending = todayOrders.find(i => i.status === "Menunggu");
-      if (!nextPending) {
-        alert("Tidak ada antrian baru yang menunggu hari ini.");
-        return;
-      }
-      panggilSpesifik(nextPending._id);
-    };
-
-    window.hitungKembalian = function() {
-      if (!activeQueueId) return;
-      const order = orderHistory.find(i => i._id === activeQueueId);
-      if (!order) return;
-
-      const bayar = parseInt(document.getElementById("kasir-input-bayar").value) || 0;
-      const kembalian = bayar - order.total;
-
-      const kembalianEl = document.getElementById("kasir-kembalian");
-      if (kembalian >= 0) {
-        kembalianEl.innerText = `Rp ${kembalian.toLocaleString('id-ID')}`;
-        kembalianEl.style.color = "var(--success)";
-      } else {
-        kembalianEl.innerText = `- Rp ${Math.abs(kembalian).toLocaleString('id-ID')}`;
-        kembalianEl.style.color = "var(--primary)";
-      }
-    };
-
-    window.prosesPembayaran = async function() {
-      if (!activeQueueId) {
-        alert("Panggil antrian terlebih dahulu sebelum konfirmasi bayar.");
-        return;
-      }
-
-      const order = orderHistory.find(i => i._id === activeQueueId);
-      if (!order) return;
-
-      const bayar = parseInt(document.getElementById("kasir-input-bayar").value) || 0;
-      if (bayar < order.total) {
-        alert(`Uang pembayaran kurang! Total tagihan Rp ${order.total.toLocaleString('id-ID')}`);
-        return;
-      }
-
-      const kembalian = bayar - order.total;
-
-      await fetch(`${API_URL}/orders/${activeQueueId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: "Lunas", bayar: bayar, kembalian: kembalian })
-      });
-
-      alert("Pembayaran berhasil dikonfirmasi LUNAS!");
-      bukaStruk(order, bayar, kembalian);
-      
-      document.getElementById("kasir-current-num").innerText = "--";
-      document.getElementById("kasir-current-name").innerText = "Atas Nama: -";
-      document.getElementById("kasir-total-tagihan").innerText = "Rp 0";
-      document.getElementById("kasir-input-bayar").value = "";
-      document.getElementById("kasir-kembalian").innerText = "Rp 0";
-      activeQueueId = null;
-      fetchOrders();
-    };
-
-    window.bukaStrukTerkini = function() {
-      if (!activeQueueId) {
-        alert("Pilih antrian terlebih dahulu!");
-        return;
-      }
-      const order = orderHistory.find(i => i._id === activeQueueId);
-      if (!order) return;
-
-      const bayar = parseInt(document.getElementById("kasir-input-bayar").value) || order.bayar || 0;
-      const kembalian = bayar >= order.total ? bayar - order.total : (order.kembalian || 0);
-
-      bukaStruk(order, bayar, kembalian);
-    };
-
-    window.bukaStrukByKey = function(id) {
-      const order = orderHistory.find(i => i._id === id);
-      if (!order) return;
-      bukaStruk(order, order.bayar || order.total, order.kembalian || 0);
-    };
-
-    function bukaStruk(order, bayar, kembalian) {
-      activeStrukData = { order, bayar, kembalian };
-      
-      document.getElementById("struk-waktu").innerText = order.waktu;
-      document.getElementById("struk-no").innerText = order.noAntrian;
-      document.getElementById("struk-nama").innerText = order.nama;
-      
-      const itemsContainer = document.getElementById("struk-items");
-      const rincianArr = order.rincian.split(',');
-      itemsContainer.innerHTML = rincianArr.map(item => `
-        <div class="receipt-row">
-          <span>${item.trim()}</span>
-        </div>
-      `).join('');
-
-      document.getElementById("struk-total").innerText = `Rp ${order.total.toLocaleString('id-ID')}`;
-      document.getElementById("struk-bayar").innerText = `Rp ${(bayar || 0).toLocaleString('id-ID')}`;
-      document.getElementById("struk-kembali").innerText = `Rp ${(kembalian || 0).toLocaleString('id-ID')}`;
-
-      document.getElementById("modal-struk").style.display = "flex";
-    }
-
-    window.kirimStrukWA = function() {
-      if (!activeStrukData) return;
-      const { order, bayar, kembalian } = activeStrukData;
-      
-      let phone = prompt("Masukkan nomor WhatsApp pelanggan (contoh: 08123456789):");
-      if (!phone) return;
-
-      phone = phone.trim().replace(/[^0-9]/g, '');
-      if (phone.startsWith('0')) {
-        phone = '62' + phone.slice(1);
-      }
-
-      const rincianTeks = order.rincian.split(',').map(item => `• ${item.trim()}`).join('\n');
-
-      const pesan = `*PANGGON NJAJAN*
-Bhummi Jati Permai LL 04 Jatirembe Gresik
-Telp: 085100000066
-----------------------------------
-Tgl: ${order.waktu}
-No. Antrian: *${order.noAntrian}*
-Pelanggan: ${order.nama}
-----------------------------------
-*Pesanan:*
-${rincianTeks}
-----------------------------------
-*Total Tagihan:* Rp ${order.total.toLocaleString('id-ID')}
-*Bayar:* Rp ${(bayar || 0).toLocaleString('id-ID')}
-*Kembalian:* Rp ${(kembalian || 0).toLocaleString('id-ID')}
-----------------------------------
-*** TERIMA KASIH ***
-Selamat Menikmati Hidangan Anda`;
-
-      const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent(pesan)}`;
-      window.open(waUrl, '_blank');
-    };
-
-    window.tutupStruk = function() {
-      document.getElementById("modal-struk").style.display = "none";
-    };
-
-    window.hapusSemuaTransaksi = async function() {
-      if (confirm("Apakah Anda yakin ingin menghapus SELURUH data transaksi?")) {
-        await fetch(`${API_URL}/orders`, { method: 'DELETE' });
-        alert("Semua data transaksi berhasil dibersihkan!");
-        fetchOrders();
-      }
-    };
-
-    window.setReportFilter = function(filterType) {
-      currentReportFilter = filterType;
-      selectedSpecificDate = null;
-      document.getElementById("report-date-picker").value = "";
-
-      const buttons = document.querySelectorAll('.btn-report-filter');
-      buttons.forEach(btn => btn.classList.remove('active'));
-      
-      if (filterType === 'semua') buttons[0].classList.add('active');
-      else if (filterType === 'hari_ini') buttons[1].classList.add('active');
-      else if (filterType === 'mingguan') buttons[2].classList.add('active');
-      else if (filterType === 'bulanan') buttons[3].classList.add('active');
-
-      renderAdminView();
-    };
-
-    window.filterBySpecificDate = function() {
-      const dateVal = document.getElementById("report-date-picker").value;
-      if (!dateVal) return;
-
-      selectedSpecificDate = dateVal;
-      currentReportFilter = 'spesifik';
-
-      document.querySelectorAll('.btn-report-filter').forEach(btn => btn.classList.remove('active'));
-      renderAdminView();
-    };
-
-    function getFilteredHistory() {
-      const now = new Date();
-      return orderHistory.filter(order => {
-        const orderDate = getOrderDateObj(order);
-
-        if (currentReportFilter === 'spesifik' && selectedSpecificDate) {
-          const year = orderDate.getFullYear();
-          const month = String(orderDate.getMonth() + 1).padStart(2, '0');
-          const day = String(orderDate.getDate()).padStart(2, '0');
-          return `${year}-${month}-${day}` === selectedSpecificDate;
-        }
-
-        if (currentReportFilter === 'hari_ini') {
-          return isSameDay(orderDate, now);
-        }
-
-        if (currentReportFilter === 'mingguan') {
-          const sevenDaysAgo = new Date();
-          sevenDaysAgo.setDate(now.getDate() - 7);
-          sevenDaysAgo.setHours(0, 0, 0, 0);
-          return orderDate >= sevenDaysAgo;
-        }
-
-        if (currentReportFilter === 'bulanan') {
-          return orderDate.getMonth() === now.getMonth() && orderDate.getFullYear() === now.getFullYear();
-        }
-
-        return true;
-      });
-    }
-
-    function renderAdminView() {
-      const tbody = document.getElementById("admin-table-body");
-      if (!tbody) return;
-
-      const filteredData = getFilteredHistory();
-      
-      document.getElementById("stat-total-order").innerText = filteredData.length;
-      
-      const completed = filteredData.filter(i => i.status === "Lunas");
-      document.getElementById("stat-completed-order").innerText = completed.length;
-
-      const totalRevenue = completed.reduce((sum, i) => sum + i.total, 0);
-      document.getElementById("stat-total-revenue").innerText = `Rp ${totalRevenue.toLocaleString('id-ID')}`;
-
-      if (filteredData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #9ca3af;">Tidak ada data transaksi pada periode ini.</td></tr>`;
-        return;
-      }
-
-      tbody.innerHTML = filteredData.map(item => `
-        <tr>
-          <td>${item.waktu}</td>
-          <td><strong>${item.noAntrian}</strong></td>
-          <td>${item.nama}</td>
-          <td>${item.rincian}</td>
-          <td>Rp ${item.total.toLocaleString('id-ID')}</td>
-          <td>Rp ${(item.bayar || 0).toLocaleString('id-ID')}</td>
-          <td>Rp ${(item.kembalian || 0).toLocaleString('id-ID')}</td>
-          <td>
-            <span class="badge ${item.status === 'Lunas' ? 'badge-paid' : (item.status === 'Dipanggil' ? 'badge-called' : 'badge-pending')}">
-              ${item.status}
-            </span>
-          </td>
-          <td>
-            <button class="btn btn-info btn-sm" onclick="bukaStrukByKey('${item._id}')">🖨️ Struk</button>
-          </td>
-        </tr>
-      `).join('');
-    }
-
-    window.downloadCSV = function() {
-      const filteredData = getFilteredHistory();
-      if (filteredData.length === 0) {
-        alert("Belum ada data laporan pada periode ini untuk di-download.");
-        return;
-      }
-
-      let csvContent = "data:text/csv;charset=utf-8,";
-      csvContent += "Tanggal & Waktu,No Antrian,Nama Pemesan,Rincian Pesanan,Total (Rp),Bayar (Rp),Kembalian (Rp),Status Pembayaran\n";
-
-      filteredData.forEach(order => {
-        let rincianClean = `"${order.rincian.replace(/"/g, '""')}"`;
-        let row = `${order.waktu},${order.noAntrian},${order.nama},${rincianClean},${order.total},${order.bayar || 0},${order.kembalian || 0},${order.status}`;
-        csvContent += row + "\n";
-      });
-
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      const today = new Date().toISOString().split('T')[0];
-      link.setAttribute("download", `Laporan_PanggonNjajan_${currentReportFilter}_${today}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    };
-
-    function renderDisplayView() {
-      const displayList = document.getElementById("display-queue-list");
-      if (!displayList) return;
-
-      const todayOrders = getTodayOrders();
-      const currentlyCalled = todayOrders.slice().reverse().find(i => i.status === "Dipanggil");
-      
-      if (currentlyCalled) {
-        document.getElementById("display-current-num").innerText = currentlyCalled.noAntrian;
-        document.getElementById("display-current-name").innerText = `Atas Nama: ${currentlyCalled.nama}`;
-
-        if (lastCalledId !== currentlyCalled._id) {
-          panggilSuara(currentlyCalled.noAntrian);
-          lastCalledId = currentlyCalled._id;
-        }
-      } else {
-        document.getElementById("display-current-num").innerText = "--";
-        document.getElementById("display-current-name").innerText = "Menunggu Panggilan...";
-      }
-
-      const waitingCount = todayOrders.filter(i => i.status === "Menunggu").length;
-      document.getElementById("display-waiting-count").innerText = `${waitingCount} Orang`;
-      
-      const lastAssigned = todayOrders.length > 0 ? todayOrders[todayOrders.length - 1].noAntrian : 'PJ-000';
-      document.getElementById("display-total-assigned").innerText = lastAssigned;
-
-      if (todayOrders.length === 0) {
-        displayList.innerHTML = `<p style="color: #9ca3af; text-align: center;">Belum ada antrian hari ini.</p>`;
-        return;
-      }
-
-      displayList.innerHTML = todayOrders.map(item => `
-        <div class="queue-card-item ${item.status === 'Dipanggil' ? 'dipanggil' : (item.status === 'Lunas' ? 'selesai' : '')}">
-          <div>
-            <strong>${item.noAntrian}</strong> - ${item.nama}
-          </div>
-          <span class="badge ${item.status === 'Lunas' ? 'badge-paid' : (item.status === 'Dipanggil' ? 'badge-called' : 'badge-pending')}">
-            ${item.status}
-          </span>
-        </div>
-      `).join('');
-    }
-
-    // Inisialisasi awal saat halaman dimuat
-    fetchMenus();
-    fetchOrders();
-    initAppAfterLogin();
+    // Inisialisasi Aplikasi Saat Halaman Di-load
+    document.addEventListener("DOMContentLoaded", () => {
+      loadMenus();
+      loadOrders();
+    });
   </script>
 </body>
 </html>
