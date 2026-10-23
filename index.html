@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panggon Njajan - Firebase Realtime System</title>
+  <title>Panggon Njajan - MongoDB Atlas System</title>
   <style>
     :root {
       --primary: #e11d48;
@@ -82,7 +82,6 @@
     .view-container { display: none; }
     .view-container.active { display: block; }
 
-    /* LAYOUT LOGIN */
     .login-box {
       max-width: 400px;
       margin: 60px auto;
@@ -353,7 +352,7 @@
           <h3>Daftar Antrian Aktif Hari Ini</h3>
           <br>
           <div class="queue-list" id="kasir-queue-list">
-            <p style="color: #9ca3af; text-align: center;">Mengambil data dari Firebase...</p>
+            <p style="color: #9ca3af; text-align: center;">Mengambil data dari server...</p>
           </div>
         </div>
       </div>
@@ -363,7 +362,7 @@
     <div id="view-admin" class="view-container">
       <div style="margin-bottom: 15px;">
         <h2>Dashboard Admin</h2>
-        <p style="color: #6b7280;">Kelola menu resto, pengguna & password, serta pantau data transaksi realtime.</p>
+        <p style="color: #6b7280;">Kelola menu resto, pengguna & password, serta pantau data transaksi.</p>
       </div>
 
       <!-- KELOLA USER & PASSWORD STAFF -->
@@ -463,7 +462,7 @@
               </tr>
             </thead>
             <tbody id="admin-table-body">
-              <tr><td colspan="9" style="text-align: center; color: #9ca3af;">Mengambil data dari Firebase...</td></tr>
+              <tr><td colspan="9" style="text-align: center; color: #9ca3af;">Memuat data dari server...</td></tr>
             </tbody>
           </table>
         </div>
@@ -502,7 +501,7 @@
           <h3>Daftar Panggilan Hari Ini</h3>
           <br>
           <div class="queue-list" id="display-queue-list">
-            <p style="color: #9ca3af; text-align: center;">Mengambil data dari Firebase...</p>
+            <p style="color: #9ca3af; text-align: center;">Memuat data dari server...</p>
           </div>
         </div>
       </div>
@@ -542,25 +541,8 @@
     </div>
   </div>
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getDatabase, ref, push, set, onValue, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBK4mjgB7lr3ojX1fNNK80YMTHkc97a_a0",
-      authDomain: "panggon-njajan.firebaseapp.com",
-      databaseURL: "https://panggon-njajan-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "panggon-njajan",
-      storageBucket: "panggon-njajan.firebasestorage.app",
-      messagingSenderId: "1072511804027",
-      appId: "1:1072511804027:web:9d2ec206cab8341214f8de",
-      measurementId: "G-DCKJ3TKB5Y"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getDatabase(app);
-    const ordersRef = ref(db, 'orders');
-    const menusRef = ref(db, 'menus');
+  <script>
+    const API_URL = "http://localhost:5000/api";
 
     // INITIAL AKUN STAFF
     const defaultCredentials = {
@@ -583,15 +565,43 @@
     let cart = [];
     let orderHistory = []; 
     let menuList = [];
-    let activeQueueFirebaseKey = null;
+    let activeQueueId = null;
     let activeFilter = 'semua';
     let currentReportFilter = 'semua';
     let selectedSpecificDate = null;
-    let lastCalledKey = null;
+    let lastCalledId = null;
     let activeStrukData = null;
     let currentUserRole = 'pemesanan';
 
-    // LOGIN & AUTH LOGIC STAFF
+    // FETCH DATA DARI SERVER
+    async function fetchMenus() {
+      try {
+        const res = await fetch(`${API_URL}/menus`);
+        menuList = await res.json();
+        renderMenu();
+        renderAdminMenuTable();
+      } catch (err) {
+        console.error("Gagal mengambil data menu:", err);
+      }
+    }
+
+    async function fetchOrders() {
+      try {
+        const res = await fetch(`${API_URL}/orders`);
+        orderHistory = await res.json();
+        renderKasirView();
+        renderAdminView();
+        renderDisplayView();
+      } catch (err) {
+        console.error("Gagal mengambil data orders:", err);
+      }
+    }
+
+    // Refresh data otomatis setiap 3 detik agar real-time
+    setInterval(() => {
+      fetchOrders();
+    }, 3000);
+
     window.handleLogin = function(e) {
       e.preventDefault();
       const u = document.getElementById("login-username").value.trim().toLowerCase();
@@ -624,8 +634,6 @@
 
     function initAppAfterLogin() {
       const savedRole = localStorage.getItem("pj_session_role");
-      
-      // Default ke pemesanan jika belum ada session
       if (!savedRole) {
         currentUserRole = 'pemesanan';
         localStorage.setItem("pj_session_role", "pemesanan");
@@ -635,7 +643,6 @@
 
       const navSwitcher = document.getElementById("nav-role-switcher");
       const btnStaffTrigger = document.getElementById("btn-staff-login-trigger");
-      const btnLogout = document.getElementById("btn-nav-logout");
 
       if (currentUserRole === 'pemesanan') {
         navSwitcher.style.display = "none";
@@ -682,7 +689,6 @@
       }
     };
 
-    // FITUR GANTI PASSWORD (ADMIN)
     window.gantiPasswordUser = function() {
       const roleUsername = document.getElementById("admin-select-role").value;
       const newPass = document.getElementById("admin-new-password").value.trim();
@@ -704,7 +710,6 @@
     window.playTingTong = function() {
       try {
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        
         const osc1 = audioCtx.createOscillator();
         const gain1 = audioCtx.createGain();
         osc1.type = 'sine';
@@ -733,81 +738,23 @@
 
     window.panggilSuara = function(noAntrian) {
       playTingTong();
-
       if ('speechSynthesis' in window) {
         window.speechSynthesis.cancel();
-
         const nomorEja = noAntrian.replace('-', ' ').split('').join(' ');
         const teksUcap = `Nomor antrian, ${nomorEja}, silakan menuju kasir`;
-        
         const utterance = new SpeechSynthesisUtterance(teksUcap);
         utterance.lang = 'id-ID';
         utterance.rate = 0.88;
         utterance.pitch = 1.0;
-
         setTimeout(() => {
           window.speechSynthesis.speak(utterance);
         }, 1200);
       }
     };
 
-    const defaultMenus = [
-      { nama: "Es Teller", harga: 10000, kategori: "Minuman" },
-      { nama: "Alpukat Kocok", harga: 10000, kategori: "Minuman" },
-      { nama: "Mangga Kocok", harga: 10000, kategori: "Minuman" },
-      { nama: "Stroberry Kocok", harga: 10000, kategori: "Minuman" },
-      { nama: "Durian Kocok", harga: 15000, kategori: "Minuman" },
-      { nama: "Es Teller Durian", harga: 15000, kategori: "Minuman" },
-      { nama: "Mie Standar", harga: 8000, kategori: "Makanan" },
-      { nama: "Mie Jumbo", harga: 10000, kategori: "Makanan" },
-      { nama: "Dimsum Chilli Oil", harga: 10000, kategori: "Makanan" },
-      { nama: "Siomay Chilli Oil", harga: 10000, kategori: "Makanan" }
-    ];
-
-    onValue(menusRef, (snapshot) => {
-      const data = snapshot.val();
-      menuList = [];
-      if (data) {
-        Object.keys(data).forEach(key => {
-          menuList.push({ firebaseKey: key, ...data[key] });
-        });
-      } else {
-        defaultMenus.forEach(item => push(menusRef, item));
-      }
-      renderMenu();
-      renderAdminMenuTable();
-    });
-
-    onValue(ordersRef, (snapshot) => {
-      const data = snapshot.val();
-      orderHistory = [];
-      if (data) {
-        Object.keys(data).forEach(key => {
-          orderHistory.push({ firebaseKey: key, ...data[key] });
-        });
-      }
-      renderKasirView();
-      renderAdminView();
-      renderDisplayView();
-    });
-
     function getOrderDateObj(order) {
       if (order.timestamp && typeof order.timestamp === 'number') {
         return new Date(order.timestamp);
-      }
-      if (order.waktu) {
-        try {
-          const datePart = order.waktu.split(',')[0].trim();
-          const parts = datePart.split(/[\/\.-]/);
-          if (parts.length === 3) {
-            const day = parseInt(parts[0], 10);
-            const month = parseInt(parts[1], 10) - 1;
-            const year = parseInt(parts[2], 10);
-            return new Date(year, month, day);
-          }
-        } catch (e) {
-          console.error("Parse error:", e);
-        }
       }
       return new Date(2000, 0, 1);
     }
@@ -826,7 +773,7 @@
       });
     }
 
-    window.tambahMenu = function() {
+    window.tambahMenu = async function() {
       const nama = document.getElementById("admin-menu-nama").value.trim();
       const harga = parseInt(document.getElementById("admin-menu-harga").value);
       const kategori = document.getElementById("admin-menu-kategori").value;
@@ -836,14 +783,19 @@
         return;
       }
 
-      push(menusRef, { nama, harga, kategori }).then(() => {
-        alert("Menu berhasil ditambahkan!");
-        document.getElementById("admin-menu-nama").value = "";
-        document.getElementById("admin-menu-harga").value = "";
+      await fetch(`${API_URL}/menus`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nama, harga, kategori })
       });
+
+      alert("Menu berhasil ditambahkan!");
+      document.getElementById("admin-menu-nama").value = "";
+      document.getElementById("admin-menu-harga").value = "";
+      fetchMenus();
     };
 
-    window.editMenuPrompt = function(key, namaLama, hargaLama) {
+    window.editMenuPrompt = async function(id, namaLama, hargaLama) {
       const namaBaru = prompt("Edit Nama Menu:", namaLama);
       if (namaBaru === null) return;
 
@@ -856,15 +808,20 @@
         return;
       }
 
-      update(ref(db, 'menus/' + key), {
-        nama: namaBaru.trim(),
-        harga: hargaBaru
-      }).then(() => alert("Menu berhasil di-update!"));
+      await fetch(`${API_URL}/menus/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nama: namaBaru.trim(), harga: hargaBaru })
+      });
+
+      alert("Menu berhasil di-update!");
+      fetchMenus();
     };
 
-    window.hapusMenu = function(key, nama) {
+    window.hapusMenu = async function(id, nama) {
       if (confirm(`Yakin ingin menghapus menu "${nama}"?`)) {
-        remove(ref(db, 'menus/' + key));
+        await fetch(`${API_URL}/menus/${id}`, { method: 'DELETE' });
+        fetchMenus();
       }
     };
 
@@ -882,14 +839,13 @@
           <td>${m.kategori}</td>
           <td>Rp ${m.harga.toLocaleString('id-ID')}</td>
           <td>
-            <button class="btn btn-accent btn-sm" onclick="editMenuPrompt('${m.firebaseKey}', '${m.nama}', ${m.harga})">✏️ Edit</button>
-            <button class="btn btn-sm" style="background:#dc2626;" onclick="hapusMenu('${m.firebaseKey}', '${m.nama}')">🗑️ Hapus</button>
+            <button class="btn btn-accent btn-sm" onclick="editMenuPrompt('${m._id}', '${m.nama}', ${m.harga})">✏️ Edit</button>
+            <button class="btn btn-sm" style="background:#dc2626;" onclick="hapusMenu('${m._id}', '${m.nama}')">🗑️ Hapus</button>
           </td>
         </tr>
       `).join('');
     }
 
-    // --- PEMESANAN ---
     window.renderMenu = function() {
       const container = document.getElementById("menu-container");
       if (!container) return;
@@ -907,7 +863,7 @@
         let optionsHtml = "";
         if (isMie) {
           optionsHtml = `
-            <select id="option-${item.firebaseKey}" class="option-select">
+            <select id="option-${item._id}" class="option-select">
               <option value="Level 0 (Tidak Pedas)">Level 0 (Tidak Pedas)</option>
               <option value="Level 1 (Agak Pedas)">Level 1 (Agak Pedas)</option>
               <option value="Level 2 (Sedang)">Level 2 (Sedang)</option>
@@ -918,7 +874,7 @@
           `;
         } else if (isChilliOil) {
           optionsHtml = `
-            <select id="option-${item.firebaseKey}" class="option-select">
+            <select id="option-${item._id}" class="option-select">
               <option value="Campur">Chilli Oil: Campur</option>
               <option value="Pisah">Chilli Oil: Pisah</option>
             </select>
@@ -932,7 +888,7 @@
               <div class="price">Rp ${item.harga.toLocaleString('id-ID')}</div>
               ${optionsHtml}
             </div>
-            <button class="btn" onclick="tambahKeKeranjang('${item.firebaseKey}')">+ Tambah</button>
+            <button class="btn" onclick="tambahKeKeranjang('${item._id}')">+ Tambah</button>
           </div>
         `;
       }).join('');
@@ -946,17 +902,17 @@
       renderMenu();
     };
 
-    window.tambahKeKeranjang = function(key) {
-      const item = menuList.find(m => m.firebaseKey === key);
+    window.tambahKeKeranjang = function(id) {
+      const item = menuList.find(m => m._id === id);
       if (!item) return;
 
       let optionText = "";
-      const selectEl = document.getElementById(`option-${key}`);
+      const selectEl = document.getElementById(`option-${id}`);
       if (selectEl) {
         optionText = ` (${selectEl.value})`;
       }
 
-      const cartItemKey = item.firebaseKey + (optionText ? `_${optionText}` : "");
+      const cartItemKey = item._id + (optionText ? `_${optionText}` : "");
       const displayName = item.nama + optionText;
 
       const existing = cart.find(i => i.cartKey === cartItemKey);
@@ -1005,7 +961,7 @@
       totalContainer.innerText = `Rp ${total.toLocaleString('id-ID')}`;
     }
 
-    window.buatPesanan = function() {
+    window.buatPesanan = async function() {
       const nameInput = document.getElementById("customer-name");
       const nama = nameInput.value.trim();
 
@@ -1023,8 +979,7 @@
                       ', ' + 
                       now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
 
-      const newOrderRef = push(ordersRef);
-      set(newOrderRef, {
+      const newOrder = {
         noSeq: nextNumber,
         waktu: timeStr,
         timestamp: now.getTime(),
@@ -1035,12 +990,19 @@
         bayar: 0,
         kembalian: 0,
         status: "Menunggu"
-      }).then(() => {
-        alert(`Pesanan Berhasil Disimpan!\nNomor Antrian: ${antrianKode}\nAtas Nama: ${nama}`);
-        cart = [];
-        nameInput.value = "";
-        updateCartDisplay();
+      };
+
+      await fetch(`${API_URL}/orders`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newOrder)
       });
+
+      alert(`Pesanan Berhasil Disimpan!\nNomor Antrian: ${antrianKode}\nAtas Nama: ${nama}`);
+      cart = [];
+      nameInput.value = "";
+      updateCartDisplay();
+      fetchOrders();
     };
 
     function renderKasirView() {
@@ -1061,7 +1023,7 @@
             <div style="font-size: 0.8rem; color: #6b7280;">${item.rincian} (Rp ${item.total.toLocaleString('id-ID')})</div>
           </div>
           <div style="display: flex; align-items: center; gap: 8px;">
-            <button class="btn btn-accent btn-sm" onclick="panggilSpesifik('${item.firebaseKey}')">📢 Panggil</button>
+            <button class="btn btn-accent btn-sm" onclick="panggilSpesifik('${item._id}')">📢 Panggil</button>
             <span class="badge ${item.status === 'Lunas' ? 'badge-paid' : (item.status === 'Dipanggil' ? 'badge-called' : 'badge-pending')}">
               ${item.status}
             </span>
@@ -1070,12 +1032,16 @@
       `).join('');
     }
 
-    window.panggilSpesifik = function(key) {
-      const order = orderHistory.find(i => i.firebaseKey === key);
+    window.panggilSpesifik = async function(id) {
+      const order = orderHistory.find(i => i._id === id);
       if (!order) return;
 
-      activeQueueFirebaseKey = key;
-      update(ref(db, 'orders/' + activeQueueFirebaseKey), { status: "Dipanggil" });
+      activeQueueId = id;
+      await fetch(`${API_URL}/orders/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: "Dipanggil" })
+      });
 
       document.getElementById("kasir-current-num").innerText = order.noAntrian;
       document.getElementById("kasir-current-name").innerText = `Atas Nama: ${order.nama}`;
@@ -1084,6 +1050,7 @@
       const inputBayar = document.getElementById("kasir-input-bayar");
       inputBayar.value = order.bayar > 0 ? order.bayar : "";
       hitungKembalian();
+      fetchOrders();
     };
 
     window.panggilBerikutnya = function() {
@@ -1093,13 +1060,12 @@
         alert("Tidak ada antrian baru yang menunggu hari ini.");
         return;
       }
-
-      panggilSpesifik(nextPending.firebaseKey);
+      panggilSpesifik(nextPending._id);
     };
 
     window.hitungKembalian = function() {
-      if (!activeQueueFirebaseKey) return;
-      const order = orderHistory.find(i => i.firebaseKey === activeQueueFirebaseKey);
+      if (!activeQueueId) return;
+      const order = orderHistory.find(i => i._id === activeQueueId);
       if (!order) return;
 
       const bayar = parseInt(document.getElementById("kasir-input-bayar").value) || 0;
@@ -1115,13 +1081,13 @@
       }
     };
 
-    window.prosesPembayaran = function() {
-      if (!activeQueueFirebaseKey) {
+    window.prosesPembayaran = async function() {
+      if (!activeQueueId) {
         alert("Panggil antrian terlebih dahulu sebelum konfirmasi bayar.");
         return;
       }
 
-      const order = orderHistory.find(i => i.firebaseKey === activeQueueFirebaseKey);
+      const order = orderHistory.find(i => i._id === activeQueueId);
       if (!order) return;
 
       const bayar = parseInt(document.getElementById("kasir-input-bayar").value) || 0;
@@ -1132,29 +1098,30 @@
 
       const kembalian = bayar - order.total;
 
-      update(ref(db, 'orders/' + activeQueueFirebaseKey), { 
-        status: "Lunas",
-        bayar: bayar,
-        kembalian: kembalian
-      }).then(() => {
-        alert("Pembayaran berhasil dikonfirmasi LUNAS!");
-        bukaStruk(order, bayar, kembalian);
-        
-        document.getElementById("kasir-current-num").innerText = "--";
-        document.getElementById("kasir-current-name").innerText = "Atas Nama: -";
-        document.getElementById("kasir-total-tagihan").innerText = "Rp 0";
-        document.getElementById("kasir-input-bayar").value = "";
-        document.getElementById("kasir-kembalian").innerText = "Rp 0";
-        activeQueueFirebaseKey = null;
+      await fetch(`${API_URL}/orders/${activeQueueId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: "Lunas", bayar: bayar, kembalian: kembalian })
       });
+
+      alert("Pembayaran berhasil dikonfirmasi LUNAS!");
+      bukaStruk(order, bayar, kembalian);
+      
+      document.getElementById("kasir-current-num").innerText = "--";
+      document.getElementById("kasir-current-name").innerText = "Atas Nama: -";
+      document.getElementById("kasir-total-tagihan").innerText = "Rp 0";
+      document.getElementById("kasir-input-bayar").value = "";
+      document.getElementById("kasir-kembalian").innerText = "Rp 0";
+      activeQueueId = null;
+      fetchOrders();
     };
 
     window.bukaStrukTerkini = function() {
-      if (!activeQueueFirebaseKey) {
+      if (!activeQueueId) {
         alert("Pilih antrian terlebih dahulu!");
         return;
       }
-      const order = orderHistory.find(i => i.firebaseKey === activeQueueFirebaseKey);
+      const order = orderHistory.find(i => i._id === activeQueueId);
       if (!order) return;
 
       const bayar = parseInt(document.getElementById("kasir-input-bayar").value) || order.bayar || 0;
@@ -1163,8 +1130,8 @@
       bukaStruk(order, bayar, kembalian);
     };
 
-    window.bukaStrukByKey = function(key) {
-      const order = orderHistory.find(i => i.firebaseKey === key);
+    window.bukaStrukByKey = function(id) {
+      const order = orderHistory.find(i => i._id === id);
       if (!order) return;
       bukaStruk(order, order.bayar || order.total, order.kembalian || 0);
     };
@@ -1231,13 +1198,11 @@ Selamat Menikmati Hidangan Anda`;
       document.getElementById("modal-struk").style.display = "none";
     };
 
-    window.hapusSemuaTransaksi = function() {
-      if (confirm("Apakah Anda yakin ingin menghapus SELURUH data transaksi? Action ini tidak bisa dibatalkan.")) {
-        remove(ordersRef).then(() => {
-          alert("Semua data transaksi berhasil dibersihkan!");
-        }).catch((err) => {
-          alert("Gagal menghapus data: " + err.message);
-        });
+    window.hapusSemuaTransaksi = async function() {
+      if (confirm("Apakah Anda yakin ingin menghapus SELURUH data transaksi?")) {
+        await fetch(`${API_URL}/orders`, { method: 'DELETE' });
+        alert("Semua data transaksi berhasil dibersihkan!");
+        fetchOrders();
       }
     };
 
@@ -1270,7 +1235,6 @@ Selamat Menikmati Hidangan Anda`;
 
     function getFilteredHistory() {
       const now = new Date();
-
       return orderHistory.filter(order => {
         const orderDate = getOrderDateObj(order);
 
@@ -1315,7 +1279,7 @@ Selamat Menikmati Hidangan Anda`;
       document.getElementById("stat-total-revenue").innerText = `Rp ${totalRevenue.toLocaleString('id-ID')}`;
 
       if (filteredData.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #9ca3af;">Tidak ada data transaksi pada periode/tanggal ini.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" style="text-align: center; color: #9ca3af;">Tidak ada data transaksi pada periode ini.</td></tr>`;
         return;
       }
 
@@ -1334,7 +1298,7 @@ Selamat Menikmati Hidangan Anda`;
             </span>
           </td>
           <td>
-            <button class="btn btn-info btn-sm" onclick="bukaStrukByKey('${item.firebaseKey}')">🖨️ Struk</button>
+            <button class="btn btn-info btn-sm" onclick="bukaStrukByKey('${item._id}')">🖨️ Struk</button>
           </td>
         </tr>
       `).join('');
@@ -1342,7 +1306,6 @@ Selamat Menikmati Hidangan Anda`;
 
     window.downloadCSV = function() {
       const filteredData = getFilteredHistory();
-
       if (filteredData.length === 0) {
         alert("Belum ada data laporan pada periode ini untuk di-download.");
         return;
@@ -1360,7 +1323,6 @@ Selamat Menikmati Hidangan Anda`;
       const encodedUri = encodeURI(csvContent);
       const link = document.createElement("a");
       link.setAttribute("href", encodedUri);
-      
       const today = new Date().toISOString().split('T')[0];
       link.setAttribute("download", `Laporan_PanggonNjajan_${currentReportFilter}_${today}.csv`);
       document.body.appendChild(link);
@@ -1379,9 +1341,9 @@ Selamat Menikmati Hidangan Anda`;
         document.getElementById("display-current-num").innerText = currentlyCalled.noAntrian;
         document.getElementById("display-current-name").innerText = `Atas Nama: ${currentlyCalled.nama}`;
 
-        if (lastCalledKey !== currentlyCalled.firebaseKey) {
+        if (lastCalledId !== currentlyCalled._id) {
           panggilSuara(currentlyCalled.noAntrian);
-          lastCalledKey = currentlyCalled.firebaseKey;
+          lastCalledId = currentlyCalled._id;
         }
       } else {
         document.getElementById("display-current-num").innerText = "--";
@@ -1411,6 +1373,9 @@ Selamat Menikmati Hidangan Anda`;
       `).join('');
     }
 
+    // Inisialisasi awal saat halaman dimuat
+    fetchMenus();
+    fetchOrders();
     initAppAfterLogin();
   </script>
 </body>
