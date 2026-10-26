@@ -826,7 +826,7 @@
       const { error } = await supabaseClient
         .from('menus')
         .update({ nama: namaBaru.trim(), harga: hargaBaru })
-        .eq('nama', namaLama); // Menggunakan nama sebagai identifikasi jika primary key teks
+        .eq('nama', namaLama);
 
       if (error) {
         alert("Gagal update menu: " + error.message);
@@ -991,9 +991,14 @@
       if (!nama) { alert("Isi Nama Pemesan terlebih dahulu!"); return; }
       if (cart.length === 0) { alert("Pilih menu terlebih dahulu!"); return; }
 
+      // Mengambil noSeq tertinggi secara aman agar tidak pernah terjadi duplicate key
+      const maxSeq = orderHistory.reduce((max, item) => (item.noSeq > max ? item.noSeq : max), 0);
+      const nextNumber = maxSeq + 1;
+
       const todayOrders = getTodayOrders();
-      const nextNumber = todayOrders.length + 1;
-      const antrianKode = `PJ-${String(nextNumber).padStart(3, '0')}`;
+      const nextAntrianNum = todayOrders.length + 1;
+      const antrianKode = `PJ-${String(nextAntrianNum).padStart(3, '0')}`;
+
       const total = cart.reduce((sum, item) => sum + (Number(item.harga) * item.qty), 0);
       const rincian = cart.map(i => `${i.displayName} (${i.qty}x)`).join(', ');
       
@@ -1230,7 +1235,6 @@ Selamat Menikmati Hidangan Anda`;
 
     window.hapusSemuaTransaksi = async function() {
       if (confirm("Apakah Anda yakin ingin menghapus SELURUH data transaksi?")) {
-        // Hapus semua data dari tabel orders di Supabase
         const { error } = await supabaseClient.from('orders').delete().neq('noSeq', 0);
         if (error) {
           alert("Gagal menghapus data: " + error.message);
@@ -1408,7 +1412,8 @@ Selamat Menikmati Hidangan Anda`;
       `).join('');
     }
 
-    // Inisialisasi awal saat halaman dimuat
+    // Inisialisasi awal saat halaman dimuat (Selalu mulai dari tampilan Pelanggan)
+    localStorage.setItem("pj_session_role", "pemesanan");
     fetchMenus();
     fetchOrders();
     initAppAfterLogin();
